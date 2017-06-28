@@ -311,7 +311,8 @@ class Marian {
 
         const headers = {
             'Content-Type': 'application/json',
-            'Vary': 'Accept-Encoding'
+            'Vary': 'Accept-Encoding',
+            'Access-Control-Allow-Origin': '*',
         }
 
         responseBody = await compress(req, headers, responseBody)
