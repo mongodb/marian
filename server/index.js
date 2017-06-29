@@ -324,10 +324,16 @@ class Marian {
     }
 
     async handleSearch(parsedUrl, req, res) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Vary': 'Accept-Encoding',
+            'Access-Control-Allow-Origin': '*',
+        }
+
         const query = parsedUrl.query.q
         if (!query) {
-            res.writeHead(400, {})
-            res.end('')
+            res.writeHead(400, headers)
+            res.end('[]')
             return
         }
 
@@ -337,8 +343,8 @@ class Marian {
         } catch(err) {
             if (err instanceof StillIndexingError) {
                 // Search index isn't yet loaded; try again later
-                res.writeHead(503, {})
-                res.end('')
+                res.writeHead(503, headers)
+                res.end('[]')
                 return
             }
 
@@ -346,12 +352,6 @@ class Marian {
         }
 
         let responseBody = JSON.stringify(results)
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'Vary': 'Accept-Encoding',
-            'Access-Control-Allow-Origin': '*',
-        }
 
         responseBody = await compress(req, headers, responseBody)
         res.writeHead(200, headers)
