@@ -56,6 +56,12 @@ function checkMethod(req, res, method) {
     return true
 }
 
+class StillIndexingError extends Error {
+    constructor() {
+        super('Search index not yet ready')
+    }
+}
+
 class Manifest {
     constructor(searchProperty, manifestUrl, options) {
         this.searchProperty = searchProperty
@@ -116,6 +122,7 @@ class Index {
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = (event) => {
             this.index = lunr.Index.load(event.data)
+            console.log('Loaded new index')
         }
     }
 
@@ -126,12 +133,33 @@ class Index {
         }
     }
 
-    search(query) {
+    search(queryString, searchProperty) {
         if (!this.index) {
-            throw new Error('Search index not yet ready')
+            throw new StillIndexingError()
         }
 
-        const rawResults = this.index.search(query).slice(0, 100).map((match) => {
+        let rawResults = this.index.query((query) => {
+            const terms = queryString.split(/\W+/)
+            for (const term of terms) {
+                query.term(term, {usePipeline: true, boost: 100})
+                query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
+                query.term(term, {usePipeline: false, boost: 1, editDistance: 1 })
+            }
+
+            if (searchProperty) {
+                query.term(searchProperty, {usePipeline: false, fields: ['searchProperty']})
+            }
+        })
+
+        if (searchProperty) {
+            rawResults = rawResults.filter((match) => {
+                const doc = this.documents.get(match.ref)
+                const manifest = this.manifests[doc.projectName]
+                return manifest.searchProperty === searchProperty
+            })
+        }
+
+        rawResults = rawResults.slice(0, 100).map((match) => {
             const doc = this.documents.get(match.ref)
             return {
                 title: doc.title,
@@ -192,6 +220,7 @@ class Index {
             const parsedManifestData = JSON.parse(data.Body)
             for (const doc of parsedManifestData.documents) {
                 parsedManifestData.url = parsedManifestData.url.replace(/\/+$/, '')
+                doc.projectName = projectName
                 doc.slug = doc.slug.replace(/^\/+/, '')
                 doc.url = `${parsedManifestData.url}/${doc.slug}`
                 this.documents.set(doc.url, doc)
@@ -299,12 +328,16 @@ class Marian {
 
         let results
         try {
-            results = this.index.search(query)
+            results = this.index.search(query, parsedUrl.query.searchProperty)
         } catch(err) {
-            // Search index isn't yet loaded; try again later
-            res.writeHead(503, {})
-            res.end('')
-            return
+            if (err instanceof StillIndexingError) {
+                // Search index isn't yet loaded; try again later
+                res.writeHead(503, {})
+                res.end('')
+                return
+            }
+
+            throw err
         }
 
         let responseBody = JSON.stringify(results)
