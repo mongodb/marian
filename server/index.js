@@ -144,7 +144,7 @@ class Index {
         }
 
         let rawResults = this.index.query((query) => {
-            const terms = queryString.split(/\W+/)
+            const terms = queryString.toLowerCase().split(/\W+/)
             for (const term of terms) {
                 query.term(term, {usePipeline: true, boost: 100})
                 query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
