@@ -7,9 +7,14 @@ const util = require('util')
 const zlib = require('zlib')
 
 const iltorb = require('iltorb')
+const Logger = require('basic-logger')
 const lunr = require('lunr')
 const S3 = require('aws-sdk/clients/s3')
 const Worker = require('tiny-worker')
+
+const log = new Logger({
+    showTimestamp: true,
+})
 
 /**
  * Find an acceptable compression format for the client, and return a compressed
@@ -122,7 +127,7 @@ class Index {
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = (event) => {
             this.index = lunr.Index.load(event.data)
-            console.log('Loaded new index')
+            log.info('Loaded new index')
         }
     }
 
@@ -245,14 +250,14 @@ class Marian {
             try {
                 await this.handle(req, res)
             } catch(err) {
-                console.error(err)
+                log.error(err)
                 res.writeHead(500, {})
                 res.end('')
                 return
             }
         })
 
-        console.log(`Listening on port ${port}`)
+        log.info(`Listening on port ${port}`)
         server.listen(port)
     }
 
@@ -355,20 +360,21 @@ class Marian {
 }
 
 async function main() {
+    Logger.setLevel('info', true)
     const server = new Marian('docs-mongodb-org-prod')
 
     try {
         await server.index.load()
     } catch(err) {
-        console.error('Error while initially loading index')
-        console.error(err)
+        log.error('Error while initially loading index')
+        log.error(err)
         return
     }
 
     // Warn about nonfatal error conditions
     if (server.index.errors.length) {
-        console.error('Got errors while initially loading index')
-        console.error(server.index.errors)
+        log.error('Got errors while initially loading index')
+        log.error(server.index.errors)
     }
 
     server.start(8000)
