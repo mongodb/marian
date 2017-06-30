@@ -6,6 +6,11 @@ let index = null
 let manifests = {}
 let documents = {}
 
+/**
+ * Search the index, and return results within the given searchProperty.
+ * @param {string} queryString The query string.
+ * @param {string} searchProperty The property to search. If empty, all results are returned.
+ */
 function search(queryString, searchProperty) {
     if (!index) {
         throw new Error('still-indexing')

@@ -2,7 +2,11 @@
   "name": "marian",
   "version": "0.1.0",
   "description": "a tiny search engine",
-  "main": "index.js",
+  "main": "src/index.js",
+  "files": [
+    "src/index.js",
+    "src/worker-searcher.js"
+  ],
   "author": "Andrew Aldridge <andrew.aldridge@mongodb.com>",
   "license": "AGPL-3.0",
   "dependencies": {

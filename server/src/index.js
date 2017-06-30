@@ -61,7 +61,12 @@ function checkMethod(req, res, method) {
     return true
 }
 
+/** A web worker with a promise-oriented message-call interface. */
 class TaskWorker {
+    /**
+     * Create a new TaskWorker.
+     * @param {string} scriptPath - A path to a JS file to execute.
+     */
     constructor(scriptPath) {
         this.worker = new Worker(scriptPath)
         this.worker.onmessage = this.onmessage.bind(this)
@@ -71,6 +76,27 @@ class TaskWorker {
         this.messageId = 0
     }
 
+    /**
+     * Send a message to this TaskWorker.
+     * @param {map} message - An object to send to the worker.
+     * @return {Promise}
+     */
+    send(message) {
+        return new Promise((resolve, reject) => {
+            const messageId = this.messageId
+            this.messageId += 1
+            this.backlog += 1
+
+            this.worker.postMessage({message: message, messageId: messageId})
+            this.pending.set(messageId, [resolve, reject])
+        })
+    }
+
+    /**
+     * Handler for messages received from the worker.
+     * @private
+     * @param {MessageEvent} event
+     */
     onmessage(event) {
         const pair = this.pending.get(event.data.messageId)
         if (!pair) {
@@ -88,20 +114,15 @@ class TaskWorker {
 
         resolve(event.data)
     }
-
-    send(message) {
-        return new Promise((resolve, reject) => {
-            const messageId = this.messageId
-            this.messageId += 1
-            this.backlog += 1
-
-            this.worker.postMessage({message: message, messageId: messageId})
-            this.pending.set(messageId, [resolve, reject])
-        })
-    }
 }
 
+/** A round-robin pool. Useful primarily for making a pool of TaskWorkers. */
 class Pool {
+    /**
+     * Create a new Pool.
+     * @param {number} size - The size of the pool.
+     * @param {function} f - A function returning a pool element.
+     */
     constructor(size, f) {
         this.size = size
         this.current = 0
@@ -111,6 +132,9 @@ class Pool {
         }
     }
 
+    /**
+     * Return the next element of the pool.
+     */
     get() {
         const element = this.pool[this.current]
         this.current = (this.current + 1) % this.size
@@ -118,6 +142,7 @@ class Pool {
     }
 }
 
+/** A manifest describing a single property to search. */
 class Manifest {
     constructor(searchProperty, manifestUrl, options) {
         this.searchProperty = searchProperty
@@ -129,6 +154,10 @@ class Manifest {
         this.lastSync = null
     }
 
+    /**
+     * Return a document briefly describing this manifest.
+     * @return {map}
+     */
     getStatus() {
         return {
             'searchProperty': this.searchProperty,
@@ -175,7 +204,7 @@ class Index {
 
         this.lastSyncDate = null
 
-        this.workers = new Pool(os.cpus().length, () => new TaskWorker('worker-searcher.js'))
+        this.workers = new Pool(os.cpus().length, () => new TaskWorker(__dirname + '/worker-searcher.js'))
 
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = async (event) => {
