@@ -215,7 +215,12 @@ class Index {
                     index: event.data
                 }})
             }
+
             this.lastSyncDate = new Date()
+            // This date will be used to compare against incoming request HTTP dates,
+            // which truncate the milliseconds.
+            this.lastSyncDate.setMilliseconds(0)
+
             log.info('Loaded new index')
         }
     }
@@ -375,7 +380,8 @@ class Marian {
     async handleStatus(parsedUrl, req, res) {
         const headers = {
             'Content-Type': 'application/json',
-            'Vary': 'Accept-Encoding'
+            'Vary': 'Accept-Encoding',
+            'Pragma': 'no-cache'
         }
 
         let body = JSON.stringify(this.index.getStatus())
@@ -389,7 +395,17 @@ class Marian {
         const headers = {
             'Content-Type': 'application/json',
             'Vary': 'Accept-Encoding',
+            'Cache-Control': 'public,max-age=120,must-revalidate',
             'Access-Control-Allow-Origin': '*',
+        }
+
+        if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
+            const ifModifiedSince = new Date(req.headers['if-modified-since'])
+            if (ifModifiedSince >= this.index.lastSyncDate) {
+                res.writeHead(304, headers)
+                res.end('')
+                return
+            }
         }
 
         const query = parsedUrl.query.q
@@ -414,6 +430,7 @@ class Marian {
             throw err
         }
 
+        headers['Last-Modified'] = this.index.lastSyncDate.toUTCString()
         let responseBody = JSON.stringify(results)
 
         responseBody = await compress(req, headers, responseBody)
