@@ -5,4 +5,4 @@ COPY . /usr/src/app
 RUN npm install
 
 EXPOSE 8000
-ENTRYPOINT ["node", "index.js"]
+ENTRYPOINT ["node", "src/index.js"]
