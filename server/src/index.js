@@ -242,7 +242,7 @@ class Index {
         this.errors = []
 
         const s3 = new S3({apiVersion: '2006-03-01'})
-        const result = await util.promisify(s3.listObjectsV2.bind(s3))({
+        const result = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('listObjectsV2', {
             Bucket: this.bucket,
             Prefix: 'search-indexes/'
         })
@@ -274,7 +274,7 @@ class Index {
 
             let data
             try {
-                data = await util.promisify(s3.getObject.bind(s3))({
+                data = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('getObject', {
                     Bucket: this.bucket,
                     Key: bucketEntry.Key,
                     IfModifiedSince: lastSync
