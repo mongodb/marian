@@ -123,10 +123,12 @@ class Index {
         this.errors = []
 
         this.index = null
+        this.lastSyncDate = null
 
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = (event) => {
             this.index = lunr.Index.load(event.data)
+            this.lastSyncDate = new Date()
             log.info('Loaded new index')
         }
     }
@@ -134,7 +136,10 @@ class Index {
     getStatus() {
         return {
             manifests: Object.values(this.manifests).map((m) => m.getStatus()),
-            lastSyncErrors: this.errors
+            lastSync: {
+                errors: this.errors,
+                finished: this.lastSyncDate.toISOString()
+            }
         }
     }
 
