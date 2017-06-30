@@ -2,13 +2,13 @@
 
 const { Buffer } = require('buffer')
 const http = require('http')
+const os = require('os')
 const url = require('url')
 const util = require('util')
 const zlib = require('zlib')
 
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
-const lunr = require('lunr')
 const S3 = require('aws-sdk/clients/s3')
 const Worker = require('tiny-worker')
 
@@ -61,9 +61,60 @@ function checkMethod(req, res, method) {
     return true
 }
 
-class StillIndexingError extends Error {
-    constructor() {
-        super('Search index not yet ready')
+class TaskWorker {
+    constructor(scriptPath) {
+        this.worker = new Worker(scriptPath)
+        this.worker.onmessage = this.onmessage.bind(this)
+
+        this.backlog = 0
+        this.pending = new Map()
+        this.messageId = 0
+    }
+
+    onmessage(event) {
+        const pair = this.pending.get(event.data.messageId)
+        if (!pair) {
+            log.error(`Got unknown message ID ${event.data.messageId}`)
+            return
+        }
+
+        this.backlog -= 1
+        this.pending.delete(event.data.messageId)
+        const [resolve, reject] = pair
+        if (event.data.error) {
+            reject(event.data.error)
+            return
+        }
+
+        resolve(event.data)
+    }
+
+    send(message) {
+        return new Promise((resolve, reject) => {
+            const messageId = this.messageId
+            this.messageId += 1
+            this.backlog += 1
+
+            this.worker.postMessage({message: message, messageId: messageId})
+            this.pending.set(messageId, [resolve, reject])
+        })
+    }
+}
+
+class Pool {
+    constructor(size, f) {
+        this.size = size
+        this.current = 0
+        this.pool = []
+        for (let i = 0; i < size; i += 1) {
+            this.pool.push(f())
+        }
+    }
+
+    get() {
+        const element = this.pool[this.current]
+        this.current = (this.current + 1) % this.size
+        return element
     }
 }
 
@@ -118,16 +169,23 @@ function workerIndexer() {
 class Index {
     constructor(bucket) {
         this.bucket = bucket
-        this.documents = new Map()
+        this.documents = {}
         this.manifests = {}
         this.errors = []
 
-        this.index = null
         this.lastSyncDate = null
 
+        this.workers = new Pool(os.cpus().length, () => new TaskWorker('worker-searcher.js'))
+
         this.workerIndexer = new Worker(workerIndexer)
-        this.workerIndexer.onmessage = (event) => {
-            this.index = lunr.Index.load(event.data)
+        this.workerIndexer.onmessage = async (event) => {
+            for (const worker of this.workers.pool) {
+                await worker.send({sync: {
+                    documents: this.documents,
+                    manifests: this.manifests,
+                    index: event.data
+                }})
+            }
             this.lastSyncDate = new Date()
             log.info('Loaded new index')
         }
@@ -138,47 +196,17 @@ class Index {
             manifests: Object.values(this.manifests).map((m) => m.getStatus()),
             lastSync: {
                 errors: this.errors,
-                finished: this.lastSyncDate.toISOString()
-            }
+                finished: this.lastSyncDate ? this.lastSyncDate.toISOString() : null
+            },
+            workers: this.workers.pool.map((worker) => worker.backlog)
         }
     }
 
     search(queryString, searchProperty) {
-        if (!this.index) {
-            throw new StillIndexingError()
-        }
-
-        let rawResults = this.index.query((query) => {
-            const terms = queryString.toLowerCase().split(/\W+/)
-            for (const term of terms) {
-                query.term(term, {usePipeline: true, boost: 100})
-                query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
-                query.term(term, {usePipeline: false, boost: 1, editDistance: 1 })
-            }
-
-            if (searchProperty) {
-                query.term(searchProperty, {usePipeline: false, fields: ['searchProperty']})
-            }
-        })
-
-        if (searchProperty) {
-            rawResults = rawResults.filter((match) => {
-                const doc = this.documents.get(match.ref)
-                const manifest = this.manifests[doc.projectName]
-                return manifest.searchProperty === searchProperty
-            })
-        }
-
-        rawResults = rawResults.slice(0, 100).map((match) => {
-            const doc = this.documents.get(match.ref)
-            return {
-                title: doc.title,
-                preview: doc.preview,
-                url: doc.url
-            }
-        })
-
-        return rawResults
+        return this.workers.get().send({search: {
+            queryString: queryString,
+            searchProperty: searchProperty
+        }}).then((message) => message.results)
     }
 
     async load() {
@@ -233,7 +261,7 @@ class Index {
                 doc.projectName = projectName
                 doc.slug = doc.slug.replace(/^\/+/, '')
                 doc.url = `${parsedManifestData.url}/${doc.slug}`
-                this.documents.set(doc.url, doc)
+                this.documents[doc.url] = doc
             }
 
             const newManifest = new Manifest(projectName, url, parsedManifestData)
@@ -344,15 +372,16 @@ class Marian {
 
         let results
         try {
-            results = this.index.search(query, parsedUrl.query.searchProperty)
+            results = await this.index.search(query, parsedUrl.query.searchProperty)
         } catch(err) {
-            if (err instanceof StillIndexingError) {
+            if (err === 'still-indexing') {
                 // Search index isn't yet loaded; try again later
                 res.writeHead(503, headers)
                 res.end('[]')
                 return
             }
 
+            log.error(err)
             throw err
         }
 
