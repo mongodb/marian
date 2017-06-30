@@ -108,7 +108,7 @@ class TaskWorker {
         this.pending.delete(event.data.messageId)
         const [resolve, reject] = pair
         if (event.data.error) {
-            reject(event.data.error)
+            reject(new Error(event.data.error))
             return
         }
 
@@ -419,7 +419,7 @@ class Marian {
         try {
             results = await this.index.search(query, parsedUrl.query.searchProperty)
         } catch(err) {
-            if (err === 'still-indexing') {
+            if (err.message === 'still-indexing') {
                 // Search index isn't yet loaded; try again later
                 res.writeHead(503, headers)
                 res.end('[]')

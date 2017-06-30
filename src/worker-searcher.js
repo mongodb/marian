@@ -66,6 +66,6 @@ self.onmessage = function(event) {
             throw new Error('Unknown command')
         }
     } catch (err) {
-        self.postMessage({error: err.toString(), messageId: messageId})
+        self.postMessage({error: err.message, messageId: messageId})
     }
 }
