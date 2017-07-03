@@ -170,10 +170,31 @@ class Manifest {
 function workerIndexer() {
     const lunr = require('lunr')
 
+    function tokenPositionPlugin(builder) {
+        // Define a pipeline function that stores the token offset as metadata
+
+        let position = 0
+        var pipelineFunction = function (token) {
+            position += 1
+            token.metadata['pos'] = position
+            return token
+        }
+
+        // Register the pipeline function so the index can be serialised
+        lunr.Pipeline.registerFunction(pipelineFunction, 'tokenPositionMetadata')
+
+        // Add the pipeline function to the indexing pipeline
+        builder.pipeline.before(lunr.stemmer, pipelineFunction)
+
+        // Whitelist the pos metadata key
+        builder.metadataWhitelist.push('pos')
+    }
+
     this.onmessage = function(event) {
         const manifests = event.data
 
         const index = lunr(function() {
+            this.use(tokenPositionPlugin)
             this.field('searchProperty')
             this.field('title')
             this.field('text')
@@ -427,7 +448,6 @@ class Marian {
             }
 
             log.error(err)
-            throw err
         }
 
         headers['Last-Modified'] = this.index.lastSyncDate.toUTCString()
