@@ -144,9 +144,8 @@ class Pool {
 
 /** A manifest describing a single property to search. */
 class Manifest {
-    constructor(searchProperty, manifestUrl, options) {
+    constructor(searchProperty, options) {
         this.searchProperty = searchProperty
-        this.manifestUrl = manifestUrl
 
         this.baseUrl = options.url
         this.documents = options.documents
@@ -161,7 +160,6 @@ class Manifest {
     getStatus() {
         return {
             'searchProperty': this.searchProperty,
-            'url': this.url,
             'nDocuments': this.documents.length
         }
     }
@@ -319,7 +317,7 @@ class Index {
                 this.documents[doc.url] = doc
             }
 
-            const newManifest = new Manifest(projectName, url, parsedManifestData)
+            const newManifest = new Manifest(projectName, parsedManifestData)
             newManifest.lastSync = data.LastModified
             this.manifests[projectName] = newManifest
         }
