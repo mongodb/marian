@@ -3,7 +3,6 @@
 const lunr = require('lunr')
 
 let index = null
-let manifests = {}
 let documents = {}
 
 /** A parsed search query. */
@@ -142,8 +141,7 @@ function search(queryString, searchProperty) {
     if (searchProperty) {
         rawResults = rawResults.filter((match) => {
             const doc = documents[match.ref]
-            const manifest = manifests[doc.projectName]
-            return manifest.searchProperty === searchProperty
+            return doc.searchProperty === searchProperty
         })
     }
 
@@ -176,7 +174,6 @@ self.onmessage = function(event) {
             const results = search(message.search.queryString, message.search.searchProperty)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {
-            manifests = message.sync.manifests
             documents = message.sync.documents
             index = lunr.Index.load(message.sync.index)
             self.postMessage({ok: true, messageId: messageId})

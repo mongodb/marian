@@ -142,29 +142,6 @@ class Pool {
     }
 }
 
-/** A manifest describing a single property to search. */
-class Manifest {
-    constructor(searchProperty, options) {
-        this.searchProperty = searchProperty
-
-        this.baseUrl = options.url
-        this.documents = options.documents
-
-        this.lastSync = null
-    }
-
-    /**
-     * Return a document briefly describing this manifest.
-     * @return {map}
-     */
-    getStatus() {
-        return {
-            'searchProperty': this.searchProperty,
-            'nDocuments': this.documents.length
-        }
-    }
-}
-
 function workerIndexer() {
     const lunr = require('lunr')
 
@@ -191,6 +168,7 @@ function workerIndexer() {
     this.onmessage = function(event) {
         const manifests = event.data
 
+        const documents = {}
         const index = lunr(function() {
             this.use(tokenPositionPlugin)
             this.field('searchProperty')
@@ -205,20 +183,24 @@ function workerIndexer() {
                         title: doc.title,
                         text: doc.text,
                     })
+
+                    documents[doc.url] = doc
                 }
             }
         })
 
 
-        postMessage(index.toJSON())
+        postMessage({
+            index: index.toJSON(),
+            documents: documents
+        })
     }
 }
 
 class Index {
     constructor(bucket) {
         this.bucket = bucket
-        this.documents = {}
-        this.manifests = {}
+        this.manifestSyncDates = new Map()
         this.errors = []
 
         this.lastSyncDate = null
@@ -229,9 +211,8 @@ class Index {
         this.workerIndexer.onmessage = async (event) => {
             for (const worker of this.workers.pool) {
                 await worker.send({sync: {
-                    documents: this.documents,
-                    manifests: this.manifests,
-                    index: event.data
+                    documents: event.data.documents,
+                    index: event.data.index
                 }})
             }
 
@@ -246,7 +227,7 @@ class Index {
 
     getStatus() {
         return {
-            manifests: Object.values(this.manifests).map((m) => m.getStatus()),
+            manifests: Array.from(this.manifestSyncDates.keys()),
             lastSync: {
                 errors: this.errors,
                 finished: this.lastSyncDate ? this.lastSyncDate.toISOString() : null
@@ -278,6 +259,7 @@ class Index {
             throw new Error('Got truncated response from S3')
         }
 
+        const manifests = []
         for (const bucketEntry of result.Contents) {
             if (bucketEntry.Size === 0) {
                 continue
@@ -289,40 +271,37 @@ class Index {
                 continue
             }
 
-            const projectName = matches[1]
-            const manifest = this.manifests[projectName]
-            let lastSync = null
-            if (manifest !== undefined) {
-                lastSync = manifest.lastSync
-            }
-
+            const searchProperty = matches[1]
             let data
             try {
                 data = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('getObject', {
                     Bucket: this.bucket,
                     Key: bucketEntry.Key,
-                    IfModifiedSince: lastSync
+                    IfModifiedSince: this.manifestSyncDates.get(searchProperty)
                 })
             } catch(err) {
                 if (err.code === 'NotModified') { continue }
                 throw err
             }
 
+            const documents = []
             const parsedManifestData = JSON.parse(data.Body)
             for (const doc of parsedManifestData.documents) {
                 parsedManifestData.url = parsedManifestData.url.replace(/\/+$/, '')
-                doc.projectName = projectName
+                doc.searchProperty = searchProperty
                 doc.slug = doc.slug.replace(/^\/+/, '')
                 doc.url = `${parsedManifestData.url}/${doc.slug}`
-                this.documents[doc.url] = doc
+                documents.push(doc)
             }
 
-            const newManifest = new Manifest(projectName, parsedManifestData)
-            newManifest.lastSync = data.LastModified
-            this.manifests[projectName] = newManifest
+            this.manifestSyncDates.set(searchProperty, data.LastModified)
+            manifests.push({
+                documents: documents,
+                searchProperty: searchProperty
+            })
         }
 
-        this.workerIndexer.postMessage(Object.values(this.manifests))
+        this.workerIndexer.postMessage(manifests)
     }
 }
 
