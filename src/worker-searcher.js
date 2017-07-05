@@ -1,5 +1,6 @@
 'use strict'
 
+require('process').title = 'marian-worker'
 const lunr = require('lunr')
 
 let index = null

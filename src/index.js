@@ -7,6 +7,8 @@ const url = require('url')
 const util = require('util')
 const zlib = require('zlib')
 
+require('process').title = 'marian'
+
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
@@ -143,6 +145,7 @@ class Pool {
 }
 
 function workerIndexer() {
+    require('process').title = 'marian-indexer'
     const lunr = require('lunr')
 
     function tokenPositionPlugin(builder) {
