@@ -10,6 +10,7 @@ const zlib = require('zlib')
 
 require('process').title = 'marian'
 
+const Pool = require('./pool.js').Pool
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
@@ -126,32 +127,6 @@ class TaskWorker {
         }
 
         resolve(event.data)
-    }
-}
-
-/** A round-robin pool. Useful primarily for making a pool of TaskWorkers. */
-class Pool {
-    /**
-     * Create a new Pool.
-     * @param {number} size - The size of the pool.
-     * @param {function} f - A function returning a pool element.
-     */
-    constructor(size, f) {
-        this.size = size
-        this.current = 0
-        this.pool = []
-        for (let i = 0; i < size; i += 1) {
-            this.pool.push(f())
-        }
-    }
-
-    /**
-     * Return the next element of the pool.
-     */
-    get() {
-        const element = this.pool[this.current]
-        this.current = (this.current + 1) % this.size
-        return element
     }
 }
 
