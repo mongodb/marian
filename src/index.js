@@ -151,10 +151,8 @@ function workerIndexer() {
     function tokenPositionPlugin(builder) {
         // Define a pipeline function that stores the token offset as metadata
 
-        let position = 0
-        var pipelineFunction = function (token) {
-            position += 1
-            token.metadata['pos'] = position
+        var pipelineFunction = function (token, pos) {
+            token.metadata['pos'] = pos
             return token
         }
 
