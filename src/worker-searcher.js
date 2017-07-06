@@ -71,6 +71,7 @@ function haveContiguousPath(tree, lastCandidate) {
 function haveContiguousKeywords(phraseComponents, keywords) {
     const path = []
     for (const component of phraseComponents) {
+        if (!lunr.stopWordFilter(component)) { continue }
         const stemmed = lunr.stemmer(new lunr.Token(component)).str
         const positions = keywords.get(stemmed)
         if (positions === undefined) {
