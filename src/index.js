@@ -134,11 +134,14 @@ function workerIndexer() {
     require('process').title = 'marian-indexer'
     const lunr = require('lunr')
 
+    const words = new Set()
+
     function tokenPositionPlugin(builder) {
         // Define a pipeline function that stores the token offset as metadata
 
         var pipelineFunction = function (token, pos) {
             token.metadata['pos'] = pos
+            words.add(token.str)
             return token
         }
 
@@ -179,8 +182,11 @@ function workerIndexer() {
 
         postMessage({
             index: index.toJSON(),
-            documents: documents
+            documents: documents,
+            words: Array.from(words)
         })
+
+        words.clear()
     }
 }
 
@@ -197,10 +203,7 @@ class Index {
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = async (event) => {
             for (const worker of this.workers.pool) {
-                await worker.send({sync: {
-                    documents: event.data.documents,
-                    index: event.data.index
-                }})
+                await worker.send({sync: event.data})
             }
 
             this.lastSyncDate = new Date()

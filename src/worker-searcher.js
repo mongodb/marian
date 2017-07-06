@@ -3,11 +3,14 @@
 require('process').title = 'marian-worker'
 const pathModule = require('path')
 
+const dictionary = require('dictionary-en-us')
 const lunr = require('lunr')
+const nspell = require('nspell')
 const Query = require(pathModule.join(__dirname, './src/query.js')).Query
 
 const MAXIMUM_TERMS = 10
 
+let spelling = null
 let index = null
 let documents = {}
 
@@ -109,7 +112,7 @@ function search(queryString, searchProperty) {
         for (const term of parsedQuery.terms) {
             query.term(term, {usePipeline: true, boost: 100})
             query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
-            query.term(term, {usePipeline: false, boost: 1, editDistance: 1 })
+            query.term(term, {usePipeline: false, boost: 1, editDistance: 1})
         }
 
         if (searchProperty) {
@@ -135,6 +138,17 @@ function search(queryString, searchProperty) {
 
     rawResults = rawResults.slice(0, 100)
 
+    // If our results seem poor in quality, check if the query is misspelled
+    const misspelled = {}
+    if (spelling !== null && (rawResults.length === 0 || rawResults[0].score <= 0.4)) {
+        for (const term of parsedQuery.terms) {
+            const suggestions = spelling.suggest(term)
+            if (suggestions.length > 0) {
+                misspelled[term] = suggestions[0]
+            }
+        }
+    }
+
     rawResults = rawResults.map((match) => {
         const doc = documents[match.ref]
         return {
@@ -144,7 +158,25 @@ function search(queryString, searchProperty) {
         }
     })
 
-    return rawResults
+    return {
+        results: rawResults,
+        spellingCorrections: misspelled
+    }
+}
+
+function setupSpellingDictionary(words) {
+    dictionary((err, dict) => {
+        if (err) {
+            console.error(err)
+        }
+
+        const newSpelling = nspell(dict)
+        for (const word of words) {
+            newSpelling.add(word)
+        }
+
+        spelling = newSpelling
+    })
 }
 
 self.onmessage = function(event) {
@@ -158,6 +190,7 @@ self.onmessage = function(event) {
         } else if (message.sync !== undefined) {
             documents = message.sync.documents
             index = lunr.Index.load(message.sync.index)
+            setupSpellingDictionary(message.sync.words)
             self.postMessage({ok: true, messageId: messageId})
         } else {
             throw new Error('Unknown command')
