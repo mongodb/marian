@@ -2,7 +2,7 @@ NPM ?= $(shell which npm)
 MOCHA ?= ./node_modules/.bin/mocha
 ESLINT ?= ./node_modules/.bin/eslint
 
-.PHONY: lint test
+.PHONY: all lint test
 
 all: lint test
 
