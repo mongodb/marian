@@ -17,6 +17,10 @@ const Worker = require('tiny-worker')
 
 const MAXIMUM_QUERY_LENGTH = 100
 
+// If a worker's backlog rises above this threshold, reject the request.
+// This prevents the server from getting bogged down for unbounded periods of time.
+const MAXIMUM_BACKLOG = 10
+
 const log = new Logger({
     showTimestamp: true,
 })
@@ -87,6 +91,10 @@ class TaskWorker {
      * @return {Promise}
      */
     send(message) {
+        if (this.backlog > MAXIMUM_BACKLOG) {
+            throw new Error('backlog-exceeded')
+        }
+
         return new Promise((resolve, reject) => {
             const messageId = this.messageId
             this.messageId += 1
@@ -428,8 +436,8 @@ class Marian {
         try {
             results = await this.index.search(query, parsedUrl.query.searchProperty)
         } catch(err) {
-            if (err.message === 'still-indexing') {
-                // Search index isn't yet loaded; try again later
+            if (err.message === 'still-indexing' || err.message === 'backlog-exceeded') {
+                // Search index isn't yet loaded, or our backlog is out of control
                 res.writeHead(503, headers)
                 res.end('[]')
                 return
