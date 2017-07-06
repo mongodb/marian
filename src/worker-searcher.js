@@ -6,6 +6,8 @@ const pathModule = require('path')
 const lunr = require('lunr')
 const Query = require(pathModule.join(__dirname, './src/query.js')).Query
 
+const MAXIMUM_TERMS = 10
+
 let index = null
 let documents = {}
 
@@ -99,6 +101,10 @@ function search(queryString, searchProperty) {
     }
 
     const parsedQuery = new Query(queryString)
+    if (parsedQuery.terms.length > MAXIMUM_TERMS) {
+        throw new Error('query-too-long')
+    }
+
     let rawResults = index.query((query) => {
         for (const term of parsedQuery.terms) {
             query.term(term, {usePipeline: true, boost: 100})

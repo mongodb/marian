@@ -15,6 +15,8 @@ const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
 const Worker = require('tiny-worker')
 
+const MAXIMUM_QUERY_LENGTH = 100
+
 const log = new Logger({
     showTimestamp: true,
 })
@@ -408,6 +410,12 @@ class Marian {
             }
         }
 
+        if (parsedUrl.query.length > MAXIMUM_QUERY_LENGTH) {
+            res.writeHead(400, headers)
+            res.end('[]')
+            return
+        }
+
         const query = parsedUrl.query.q
         if (!query) {
             res.writeHead(400, headers)
@@ -422,6 +430,10 @@ class Marian {
             if (err.message === 'still-indexing') {
                 // Search index isn't yet loaded; try again later
                 res.writeHead(503, headers)
+                res.end('[]')
+                return
+            } else if (err.message === 'query-too-long') {
+                res.writeHead(400, headers)
                 res.end('[]')
                 return
             }
