@@ -293,6 +293,7 @@ class Index {
             for (const doc of parsedManifestData.documents) {
                 parsedManifestData.url = parsedManifestData.url.replace(/\/+$/, '')
                 doc.searchProperty = searchProperty
+                doc.includeInGlobalSearch = parsedManifestData.includeInGlobalSearch
                 doc.slug = doc.slug.replace(/^\/+/, '')
                 doc.url = `${parsedManifestData.url}/${doc.slug}`
                 documents.push(doc)

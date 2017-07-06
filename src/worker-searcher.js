@@ -119,8 +119,11 @@ function search(queryString, searchProperty) {
 
     if (searchProperty) {
         rawResults = rawResults.filter((match) => {
-            const doc = documents[match.ref]
-            return doc.searchProperty === searchProperty
+            return documents[match.ref].searchProperty === searchProperty
+        })
+    } else {
+        rawResults = rawResults.filter((match) => {
+            return documents[match.ref].includeInGlobalSearch === true
         })
     }
 
