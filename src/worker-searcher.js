@@ -1,42 +1,13 @@
 'use strict'
 
 require('process').title = 'marian-worker'
+const pathModule = require('path')
+
 const lunr = require('lunr')
+const Query = require(pathModule.join(__dirname, './src/query.js')).Query
 
 let index = null
 let documents = {}
-
-/** A parsed search query. */
-class Query {
-    /**
-     * Create a new query.
-     * @param {string} queryString
-     */
-    constructor(queryString) {
-        this.terms = []
-        this.phrases = []
-
-        const parts = queryString.split(/((?:\s+|^)"[^"]+"(?:\s+|$))/)
-        let in_quotes = false
-        for (const part of parts) {
-            if (!in_quotes) {
-                this.terms.push(...part.toLowerCase().split(/\W+/).filter((s) => s.length > 0))
-            } else {
-                const phraseMatch = part.match(/\s*"([^"]*)"\s*/)
-                if (!phraseMatch) {
-                    console.error('')
-                    continue
-                }
-
-                const phrase = phraseMatch[1].toLowerCase().trim()
-                this.phrases.push(phrase)
-                this.terms.push(...phrase.split(/\W+/))
-            }
-
-            in_quotes = !in_quotes
-        }
-    }
-}
 
 /**
  * Return true if there is a configuration of numbers in the tree that
@@ -91,7 +62,7 @@ function haveContiguousKeywords(phraseComponents, keywords) {
  * @param {lunr.MatchData} match
  * @return {boolean}
  */
-function checkPhrase(query, fields, match) {
+function checkPhrases(query, fields, match) {
     for (const phrase of query.phrases) {
         const parts = phrase.split(/\W+/)
         let haveMatch = false
@@ -149,7 +120,7 @@ function search(queryString, searchProperty) {
 
     if (parsedQuery.phrases.length > 0) {
         rawResults = rawResults.filter((match) => {
-            return checkPhrase(parsedQuery, ['title', 'text'], match)
+            return checkPhrases(parsedQuery, ['title', 'text'], match)
         })
     }
 

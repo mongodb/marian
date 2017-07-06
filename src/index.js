@@ -3,6 +3,7 @@
 const { Buffer } = require('buffer')
 const http = require('http')
 const os = require('os')
+const pathModule = require('path')
 const url = require('url')
 const util = require('util')
 const zlib = require('zlib')
@@ -206,7 +207,7 @@ class Index {
 
         this.lastSyncDate = null
 
-        this.workers = new Pool(os.cpus().length, () => new TaskWorker(__dirname + '/worker-searcher.js'))
+        this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
 
         this.workerIndexer = new Worker(workerIndexer)
         this.workerIndexer.onmessage = async (event) => {
