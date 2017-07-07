@@ -40,8 +40,8 @@ function haveContiguousPath(tree, lastCandidate) {
 /**
  * Check if the given phraseComponents appear in contiguous positions
  * within the keywords map.
- * @param {Array<string>} phraseComponents
- * @param {Map<string, Array<number>} keywords
+ * @param {[string]} phraseComponents
+ * @param {Map<string, [number]>} keywords
  * @return {boolean}
  */
 function haveContiguousKeywords(phraseComponents, keywords) {
@@ -97,6 +97,7 @@ function checkPhrases(query, fields, match) {
  * Search the index, and return results within the given searchProperty.
  * @param {string} queryString The query string.
  * @param {string} searchProperty The property to search. If empty, all results are returned.
+ * @return {{results: [{title: String, preview: String, url: String}], spellingCorrections: Object}}
  */
 function search(queryString, searchProperty) {
     if (!index) {

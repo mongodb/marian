@@ -26,6 +26,10 @@
             "error",
             "never"
         ],
-        "no-console": "off"
+        "no-console": "off",
+        "valid-jsdoc": ["error", {
+            "requireParamDescription": false,
+            "requireReturnDescription": false
+        }]
     }
 }

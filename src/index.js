@@ -110,6 +110,7 @@ class TaskWorker {
      * Handler for messages received from the worker.
      * @private
      * @param {MessageEvent} event
+     * @return {Promise<?, Error>}
      */
     onmessage(event) {
         const pair = this.pending.get(event.data.messageId)

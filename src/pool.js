@@ -17,6 +17,7 @@ class Pool {
 
     /**
      * Return the least-loaded element of the pool.
+     * @return {?} The least-loaded element of the pool.
      */
     get() {
         let min = {backlog: Infinity}
