@@ -1,6 +1,6 @@
 'use strict'
 
-const should = require('chai').should()
+require('chai').should()
 const Query = require('../src/query.js').Query
 
 let query = (new Query('foo'))

@@ -9,11 +9,11 @@ class Query {
         this.phrases = []
 
         const parts = queryString.split(/((?:\s+|^)"[^"]+"(?:\s+|$))/)
-        let in_quotes = false
+        let inQuotes = false
         for (const part of parts) {
-            in_quotes = !!(part.match(/^\s*"/))
+            inQuotes = !!(part.match(/^\s*"/))
 
-            if (!in_quotes) {
+            if (!inQuotes) {
                 this.terms.push(...part.toLowerCase().split(/\W+/).filter((s) => s.length > 0))
             } else {
                 const phraseMatch = part.match(/\s*"([^"]*)"?\s*/)

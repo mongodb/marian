@@ -37,19 +37,19 @@ const log = new Logger({
  * @param {string} content The text to compress.
  * @return {Buffer|string}
  */
-async function compress(req, headers, content) {
+function compress(req, headers, content) {
     const acceptEncoding = (req.headers['accept-encoding'] || '').split(',').map((e) => e.trim())
     if (acceptEncoding.indexOf('br') > -1) {
         headers['Content-Encoding'] = 'br'
-        return await (util.promisify(iltorb.compress)(new Buffer(content), {
+        return util.promisify(iltorb.compress)(Buffer.from(content), {
             quality: 4
-        }))
+        })
     } else if (acceptEncoding.indexOf('gzip') > -1) {
         headers['Content-Encoding'] = 'gzip'
-        return await (util.promisify(zlib.gzip)(content))
+        return util.promisify(zlib.gzip)(content)
     }
 
-    return content
+    return new Promise((resolve) => resolve(content))
 }
 
 /**
@@ -178,7 +178,6 @@ function workerIndexer() {
                 }
             }
         })
-
 
         postMessage({
             index: index.toJSON(),
@@ -309,7 +308,6 @@ class Marian {
                 log.error(err)
                 res.writeHead(500, {})
                 res.end('')
-                return
             }
         })
 
@@ -413,7 +411,7 @@ class Marian {
         let results
         try {
             results = await this.index.search(query, parsedUrl.query.searchProperty)
-        } catch(err) {
+        } catch (err) {
             if (err.message === 'still-indexing' || err.message === 'backlog-exceeded') {
                 // Search index isn't yet loaded, or our backlog is out of control
                 res.writeHead(503, headers)
@@ -443,7 +441,7 @@ async function main() {
 
     try {
         await server.index.load()
-    } catch(err) {
+    } catch (err) {
         log.error('Error while initially loading index')
         log.error(err)
         return
