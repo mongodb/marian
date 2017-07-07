@@ -170,7 +170,10 @@ function setupSpellingDictionary(words) {
             console.error(err)
         }
 
-        const newSpelling = nspell(dict)
+        const newWords = dict.dic.utf8Slice().split('\n').filter((w) => {
+            return Object.prototype.hasOwnProperty.call(words, w.split('/', 1))
+        })
+        const newSpelling = nspell(dict.aff, newWords.join('\n'))
         for (const word of words) {
             newSpelling.add(word)
         }
