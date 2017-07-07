@@ -21,6 +21,7 @@ const MAXIMUM_QUERY_LENGTH = 100
 // If a worker's backlog rises above this threshold, reject the request.
 // This prevents the server from getting bogged down for unbounded periods of time.
 const MAXIMUM_BACKLOG = 10
+const WARNING_BACKLOG = 8
 
 const log = new Logger({
     showTimestamp: true,
@@ -372,10 +373,17 @@ class Marian {
             'Pragma': 'no-cache'
         }
 
-        let body = JSON.stringify(this.index.getStatus())
+        const status = this.index.getStatus()
+        let body = JSON.stringify(status)
         body = await compress(req, headers, body)
 
-        res.writeHead(200, headers)
+        // If all workers are overloaded, return 503
+        let statusCode = 200
+        if (status.workers.filter((n) => n <= WARNING_BACKLOG).length === 0) {
+            statusCode = 503
+        }
+
+        res.writeHead(statusCode, headers)
         res.end(body)
     }
 
