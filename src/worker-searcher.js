@@ -149,6 +149,26 @@ function search(queryString, searchProperty) {
         }
     }
 
+    // Apply weightings AFTER we slice out the first 100 and check spelling. We
+    // want this to be cheap and have minimal impact on anything except order.
+    for (const match of rawResults) {
+        const doc = documents[match.ref]
+        if (doc.weight !== undefined) {
+            match.score *= doc.weight
+        }
+    }
+    rawResults = rawResults.sort((a, b) => {
+        if (a.score > b.score) {
+            return -1;
+        }
+
+        if (a.score < b.score) {
+            return 1;
+        }
+
+        return 0;
+    })
+
     rawResults = rawResults.map((match) => {
         const doc = documents[match.ref]
         return {
