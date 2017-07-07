@@ -140,7 +140,7 @@ function search(queryString, searchProperty) {
 
     // If our results seem poor in quality, check if the query is misspelled
     const misspelled = {}
-    if (spelling !== null && (rawResults.length === 0 || rawResults[0].score <= 0.4)) {
+    if (spelling !== null && (rawResults.length === 0 || rawResults[0].score <= 0.6)) {
         for (const term of parsedQuery.terms) {
             const suggestions = spelling.suggest(term)
             if (suggestions.length > 0) {
