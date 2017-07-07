@@ -163,7 +163,6 @@ function workerIndexer() {
         const documents = {}
         const index = lunr(function() {
             this.use(tokenPositionPlugin)
-            this.field('searchProperty')
             this.field('title')
             this.field('text')
 
@@ -171,7 +170,6 @@ function workerIndexer() {
                 for (const doc of manifest.documents) {
                     this.add({
                         id: doc.url,
-                        searchProperty: manifest.searchProperty,
                         title: doc.title,
                         text: doc.text,
                     })

@@ -96,10 +96,10 @@ function checkPhrases(query, fields, match) {
 /**
  * Search the index, and return results within the given searchProperty.
  * @param {string} queryString The query string.
- * @param {string} searchProperty The property to search. If empty, all results are returned.
+ * @param {[string]} searchProperties The properties to search. If empty, all results are returned.
  * @return {{results: [{title: String, preview: String, url: String}], spellingCorrections: Object}}
  */
-function search(queryString, searchProperty) {
+function search(queryString, searchProperties) {
     if (!index) {
         throw new Error('still-indexing')
     }
@@ -115,15 +115,12 @@ function search(queryString, searchProperty) {
             query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
             query.term(term, {usePipeline: false, boost: 1, editDistance: 1})
         }
-
-        if (searchProperty) {
-            query.term(searchProperty, {usePipeline: false, fields: ['searchProperty']})
-        }
     })
 
-    if (searchProperty) {
+    if (searchProperties.length) {
+        const properties = new Set(searchProperties)
         rawResults = rawResults.filter((match) => {
-            return documents[match.ref].searchProperty === searchProperty
+            return properties.has(documents[match.ref].searchProperty)
         })
     } else {
         rawResults = rawResults.filter((match) => {
@@ -209,7 +206,8 @@ self.onmessage = function(event) {
 
     try {
         if (message.search !== undefined) {
-            const results = search(message.search.queryString, message.search.searchProperty)
+            const properties = (message.search.searchProperty || '').split(',')
+            const results = search(message.search.queryString, properties)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {
             documents = message.sync.documents
