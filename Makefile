@@ -12,9 +12,6 @@ lint: node_modules/.CURRENT
 test: node_modules/.CURRENT
 	${MOCHA} test/*.js -R dot
 
-node_modules/.CURRENT: package.json node_modules
-	${NPM} update
-	touch $@
-
-node_modules:
+node_modules/.CURRENT: package.json
 	${NPM} -s install
+	touch $@
