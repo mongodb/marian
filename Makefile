@@ -1,8 +1,9 @@
 NPM ?= $(shell which npm)
+NODE ?= $(shell which node)
 MOCHA ?= ./node_modules/.bin/mocha
 ESLINT ?= ./node_modules/.bin/eslint
 
-.PHONY: all lint test
+.PHONY: all lint test integration run
 
 all: lint test
 
@@ -10,7 +11,13 @@ lint: node_modules/.CURRENT
 	${ESLINT} src/*.js test/*.js
 
 test: node_modules/.CURRENT
-	${MOCHA} test/*.js
+	${MOCHA} test/test_*.js
+
+integration: test
+	${NODE} test/integration_test.js "${NODE} src/index.js dir:test/manifests/"
+
+run:
+	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/
 
 node_modules/.CURRENT: package.json
 	${NPM} -s install --build-from-source

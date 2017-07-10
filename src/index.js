@@ -1,20 +1,24 @@
+#!/usr/bin/env node
 'use strict'
 
 const { Buffer } = require('buffer')
+const fs = require('fs')
 const http = require('http')
 const os = require('os')
 const pathModule = require('path')
+const process = require('process')
 const url = require('url')
 const util = require('util')
 const zlib = require('zlib')
 
-require('process').title = 'marian'
-
 const Pool = require('./pool.js').Pool
+const dive = require('dive')
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
 const Worker = require('tiny-worker')
+
+process.title = 'marian'
 
 const MAXIMUM_QUERY_LENGTH = 100
 
@@ -190,8 +194,8 @@ function workerIndexer() {
 }
 
 class Index {
-    constructor(bucket) {
-        this.bucket = bucket
+    constructor(manifestSource) {
+        this.manifestSource = manifestSource
         this.manifestSyncDates = new Map()
         this.errors = []
 
@@ -232,13 +236,11 @@ class Index {
         }}).then((message) => message.results)
     }
 
-    async load() {
-        this.errors = []
-
+    async getManifestsFromS3(bucketName, prefix) {
         const s3 = new S3({apiVersion: '2006-03-01'})
         const result = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('listObjectsV2', {
-            Bucket: this.bucket,
-            Prefix: 'search-indexes/'
+            Bucket: bucketName,
+            Prefix: prefix
         })
 
         if (result.IsTruncated) {
@@ -264,7 +266,7 @@ class Index {
             let data
             try {
                 data = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('getObject', {
-                    Bucket: this.bucket,
+                    Bucket: bucketName,
                     Key: bucketEntry.Key,
                     IfModifiedSince: this.manifestSyncDates.get(searchProperty)
                 })
@@ -273,23 +275,77 @@ class Index {
                 throw err
             }
 
-            const documents = []
-            const parsedManifestData = JSON.parse(data.Body)
-            for (const doc of parsedManifestData.documents) {
-                parsedManifestData.url = parsedManifestData.url.replace(/\/+$/, '')
-                doc.searchProperty = searchProperty
-                doc.includeInGlobalSearch = parsedManifestData.includeInGlobalSearch
-                doc.slug = doc.slug.replace(/^\/+/, '')
-                doc.url = `${parsedManifestData.url}/${doc.slug}`
-                documents.push(doc)
-            }
-
-            this.manifestSyncDates.set(searchProperty, data.LastModified)
             manifests.push({
-                documents: documents,
+                body: JSON.parse(data.Body),
+                lastModified: data.LastModified,
                 searchProperty: searchProperty
             })
         }
+
+        return manifests
+    }
+
+    getManifestsFromDirectory(prefix) {
+        return new Promise((resolve, reject) => {
+            const manifests = []
+
+            dive(prefix, (err, path, stats) => {
+                if (err) { reject(err) }
+                const matches = path.match(/([^/]+).json$/)
+                if (!matches) { return }
+                const searchProperty = matches[1]
+
+                manifests.push({
+                    body: JSON.parse(fs.readFileSync(path, {encoding: 'utf-8'})),
+                    lastModified: stats.mtime,
+                    searchProperty: searchProperty
+                })
+            }, () => {
+                resolve(manifests)
+            })})
+    }
+
+    async load() {
+        this.errors = []
+
+        const parsedSource = this.manifestSource.match(/((?:bucket)|(?:dir)):(.+)/)
+        if (!parsedSource) {
+            throw new Error('Bad manifest source')
+        }
+
+        let manifests
+        if (parsedSource[1] === 'bucket') {
+            const parts = parsedSource[2].split('/', 2)
+            const bucketName = parts[0].trim()
+            const prefix = parts[1].trim()
+            if (!bucketName.length || !prefix.length) {
+                throw new Error('Bad bucket manifest source')
+            }
+            manifests = await this.getManifestsFromS3(bucketName, prefix)
+        } else if (parsedSource[1] === 'dir') {
+            manifests = await this.getManifestsFromDirectory(parsedSource[2])
+        } else {
+            throw new Error('Unknown manifest source protocol')
+        }
+
+        manifests = manifests.map((manifest) => {
+            const documents = []
+            for (const doc of manifest.body.documents) {
+                manifest.url = manifest.body.url.replace(/\/+$/, '')
+                doc.searchProperty = manifest.searchProperty
+                doc.includeInGlobalSearch = manifest.body.includeInGlobalSearch
+                doc.slug = doc.slug.replace(/^\/+/, '')
+                doc.url = `${manifest.body.url}/${doc.slug}`
+                documents.push(doc)
+            }
+
+            this.manifestSyncDates.set(manifest.searchProperty, manifest.lastModified)
+
+            return {
+                documents: documents,
+                searchProperty: manifest.searchProperty
+            }
+        })
 
         this.workerIndexer.postMessage(manifests)
     }
@@ -311,8 +367,9 @@ class Marian {
             }
         })
 
-        log.info(`Listening on port ${port}`)
-        server.listen(port)
+        server.listen(port, () => {
+            log.info(`Listening on port ${port}`)
+        })
     }
 
     handle(req, res) {
@@ -444,7 +501,7 @@ class Marian {
 
 async function main() {
     Logger.setLevel('info', true)
-    const server = new Marian('docs-mongodb-org-prod')
+    const server = new Marian(process.argv[2])
 
     try {
         await server.index.load()
