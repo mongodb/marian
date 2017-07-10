@@ -41,8 +41,8 @@ describe('Query', () => {
             const match = {
                 matchData: {
                     metadata: {
-                        quoth: { text: { pos: [0] } },
-                        raven: { text: { pos: [1] } }
+                        quoth: { text: { pos: [0, 5] } },
+                        raven: { text: { pos: [8, 1] } }
                     }}}
             assert.ok(query.checkPhrases(['text'], match))
         })
@@ -52,8 +52,8 @@ describe('Query', () => {
             const match = {
                 matchData: {
                     metadata: {
-                        quoth: { text: { pos: [0] } },
-                        raven: { text: { pos: [2] } }
+                        quoth: { text: { pos: [0, 3] } },
+                        raven: { text: { pos: [2, 5] } }
                     }}}
             assert.ok(!query.checkPhrases(['text'], match))
         })
