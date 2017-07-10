@@ -41,12 +41,28 @@ async function test(port) {
     assert.strictEqual(result.response.statusCode, 200)
     assert.strictEqual(result.response.headers['content-type'], 'application/json')
     assert.deepStrictEqual(result.json.spellingCorrections, {})
+    assert.strictEqual(result.json.results.length, 6)
+    assert.strictEqual(result.json.results[0].title, 'Use Cases')
 
     // Test spelling correction
-    result = await get(`http://localhost:${port}/search?q=${encodeURIComponent('quary')}`)
+    result = await get(`http://localhost:${port}/search?q=quary`)
     assert.strictEqual(result.response.statusCode, 200)
     assert.strictEqual(result.response.headers['content-type'], 'application/json')
     assert.deepStrictEqual(result.json.spellingCorrections, {'quary': 'query'})
+
+    // Test variants of searchProperty
+    result = await get(`http://localhost:${port}/search?q=aggregation`)
+    assert.strictEqual(result.response.statusCode, 200)
+    assert.strictEqual(result.response.headers['content-type'], 'application/json')
+    assert.strictEqual(result.json.results.length, 18)
+
+    const result2 = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master,bi-connector-master`)
+    assert.deepStrictEqual(result.json, result2.json)
+
+    result = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master`)
+    assert.strictEqual(result.response.statusCode, 200)
+    assert.strictEqual(result.response.headers['content-type'], 'application/json')
+    assert.strictEqual(result.json.results.length, 12)
 
     // Test If-Modified-Since
     result = await get({

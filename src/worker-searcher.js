@@ -127,7 +127,7 @@ self.onmessage = function(event) {
 
     try {
         if (message.search !== undefined) {
-            const properties = (message.search.searchProperty || '').split(',')
+            const properties = (message.search.searchProperty || '').split(',').filter((x) => x)
             const results = search(message.search.queryString, properties)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {
