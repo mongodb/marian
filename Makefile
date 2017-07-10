@@ -13,5 +13,5 @@ test: node_modules/.CURRENT
 	${MOCHA} test/*.js
 
 node_modules/.CURRENT: package.json
-	${NPM} -s install
+	${NPM} -s install --build-from-source
 	touch $@
