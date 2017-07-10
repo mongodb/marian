@@ -1,25 +1,37 @@
+/* eslint-env node, mocha */
 'use strict'
 
-require('chai').should()
+const assert = require('assert')
 const Query = require('../src/query.js').Query
 
-let query = (new Query('foo'))
-query.terms.should.have.all.members(['foo'])
-query.phrases.should.have.all.members([])
+describe('Query', () => {
+    it('should parse a single term', () => {
+        const query = (new Query('foo'))
+        assert.deepStrictEqual(query.terms, ['foo'])
+        assert.deepStrictEqual(query.phrases, [])
+    })
 
-query = (new Query('foo   \t  bar'))
-query.terms.should.have.all.members(['foo', 'bar'])
-query.phrases.should.have.all.members([])
+    it('should delimit terms with any standard whitespace characters', () => {
+        const query = (new Query('foo   \t  bar'))
+        assert.deepStrictEqual(query.terms, ['foo', 'bar'])
+        assert.deepStrictEqual(query.phrases, [])
+    })
 
-query = (new Query('foo "one phrase" bar "second phrase"'))
-query.terms.should.have.all.members(['foo', 'one', 'phrase', 'bar', 'second', 'phrase'])
-query.phrases.should.have.all.members(['one phrase', 'second phrase'])
+    it('should parse multi-word phrases', () => {
+        const query = (new Query('foo "one phrase" bar "second phrase"'))
+        assert.deepStrictEqual(query.terms, ['foo', 'one', 'phrase', 'bar', 'second', 'phrase'])
+        assert.deepStrictEqual(query.phrases, ['one phrase', 'second phrase'])
+    })
 
-query = (new Query('"introduce the" "officially supported"'))
-query.terms.should.have.all.members(['introduce', 'the', 'officially', 'supported'])
-query.phrases.should.have.all.members(['introduce the', 'officially supported'])
+    it('should handle adjacent phrases', () => {
+        const query = (new Query('"introduce the" "officially supported"'))
+        assert.deepStrictEqual(query.terms, ['introduce', 'the', 'officially', 'supported'])
+        assert.deepStrictEqual(query.phrases, ['introduce the', 'officially supported'])
+    })
 
-// Query fragment
-query = (new Query('"officially supported'))
-query.terms.should.have.all.members(['officially', 'supported'])
-query.phrases.should.have.all.members(['officially supported'])
+    it('should handle a phrase fragment as a single phrase', () => {
+        const query = (new Query('"officially supported'))
+        assert.deepStrictEqual(query.terms, ['officially', 'supported'])
+        assert.deepStrictEqual(query.phrases, ['officially supported'])
+    })
+})

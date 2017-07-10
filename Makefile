@@ -7,10 +7,10 @@ ESLINT ?= ./node_modules/.bin/eslint
 all: lint test
 
 lint: node_modules/.CURRENT
-	${ESLINT} src/*.js
+	${ESLINT} src/*.js test/*.js
 
 test: node_modules/.CURRENT
-	${MOCHA} test/*.js -R dot
+	${MOCHA} test/*.js
 
 node_modules/.CURRENT: package.json
 	${NPM} -s install
