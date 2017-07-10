@@ -13,8 +13,8 @@ lint: node_modules/.CURRENT
 test: node_modules/.CURRENT
 	${MOCHA} test/test_*.js
 
-integration: test
-	${NODE} test/integration_test.js "${NODE} src/index.js dir:test/manifests/"
+integration:
+	${MOCHA} --timeout 5000 test/*.js
 
 run:
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/

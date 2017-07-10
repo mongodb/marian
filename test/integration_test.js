@@ -27,91 +27,110 @@ function get(url) {
     })
 }
 
-async function test(port) {
-    assert.ok(port)
+describe('integration', function() {
+    this.slow(100)
 
-    let result = await get(`http://localhost:${port}/status`)
-    assert.strictEqual(result.response.statusCode, 200)
-    assert.strictEqual(result.response.headers['content-type'], 'application/json')
-    assert.ok(result.json.lastSync.finished)
-    assert.deepStrictEqual(result.json.manifests.sort(), ['bi-connector-master', 'mongodb-ecosystem-master'])
+    let child
+    let port
+    let rl
 
-    // Test normalish query
-    result = await get(`http://localhost:${port}/search?q=${encodeURIComponent('"aggregation report" use cases')}`)
-    assert.strictEqual(result.response.statusCode, 200)
-    assert.strictEqual(result.response.headers['content-type'], 'application/json')
-    assert.deepStrictEqual(result.json.spellingCorrections, {})
-    assert.strictEqual(result.json.results.length, 6)
-    assert.strictEqual(result.json.results[0].title, 'Use Cases')
+    before('starting server', function(done) {
+        child = child_process.spawn('./src/index.js', ['dir:test/manifests/'], {
+            stdio: [0, 'pipe', 2]
+        })
+
+        rl = readline.createInterface({
+            input: child.stdout
+        })
+
+        rl.on('line', (line) => {
+            const match = line.match(/Listening on port ([0-9]+)/)
+            if (match) {
+                port = parseInt(match[1])
+            }
+
+            if (line.match(/Loaded new index/)) {
+                done()
+            } else if (line.match(/Error/)) {
+                throw new Error(line)
+            }
+        })
+
+        rl.on('error', (err) => {
+            throw err
+        })
+
+        rl.on('end', () => {
+            rl.close()
+        })
+    })
+
+    it('should print port to stdout', () => {
+        assert.ok(port)
+    })
+
+    it('should return proper /status document', async () => {
+        const result = await get(`http://localhost:${port}/status`)
+        assert.strictEqual(result.response.statusCode, 200)
+        assert.strictEqual(result.response.headers['content-type'], 'application/json')
+        assert.ok(result.json.lastSync.finished)
+        assert.deepStrictEqual(result.json.manifests.sort(), ['bi-connector-master', 'mongodb-ecosystem-master'])
+    })
+
+    it('should return proper results for a normal query', async () => {
+        const result = await get(`http://localhost:${port}/search?q=${encodeURIComponent('"aggregation report" use cases')}`)
+        assert.strictEqual(result.response.statusCode, 200)
+        assert.strictEqual(result.response.headers['content-type'], 'application/json')
+        assert.deepStrictEqual(result.json.spellingCorrections, {})
+        assert.strictEqual(result.json.results.length, 6)
+        assert.strictEqual(result.json.results[0].title, 'Use Cases')
+    })
 
     // Test spelling correction
-    result = await get(`http://localhost:${port}/search?q=quary`)
-    assert.strictEqual(result.response.statusCode, 200)
-    assert.strictEqual(result.response.headers['content-type'], 'application/json')
-    assert.deepStrictEqual(result.json.spellingCorrections, {'quary': 'query'})
+    it('should return spelling corrections', async () => {
+        const result = await get(`http://localhost:${port}/search?q=quary`)
+        assert.strictEqual(result.response.statusCode, 200)
+        assert.strictEqual(result.response.headers['content-type'], 'application/json')
+        assert.deepStrictEqual(result.json.spellingCorrections, {'quary': 'query'})
+    })
 
     // Test variants of searchProperty
-    result = await get(`http://localhost:${port}/search?q=aggregation`)
-    assert.strictEqual(result.response.statusCode, 200)
-    assert.strictEqual(result.response.headers['content-type'], 'application/json')
-    assert.strictEqual(result.json.results.length, 18)
+    it('should properly handle searchProperty', async () => {
+        let result = await get(`http://localhost:${port}/search?q=aggregation`)
+        assert.strictEqual(result.response.statusCode, 200)
+        assert.strictEqual(result.response.headers['content-type'], 'application/json')
+        assert.strictEqual(result.json.results.length, 18)
 
-    const result2 = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master,bi-connector-master`)
-    assert.deepStrictEqual(result.json, result2.json)
+        const result2 = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master,bi-connector-master`)
+        assert.deepStrictEqual(result.json, result2.json)
 
-    result = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master`)
-    assert.strictEqual(result.response.statusCode, 200)
-    assert.strictEqual(result.response.headers['content-type'], 'application/json')
-    assert.strictEqual(result.json.results.length, 12)
-
-    // Test If-Modified-Since
-    result = await get({
-        port: port,
-        path: `/search?q=${encodeURIComponent('quary')}`,
-        headers: {
-            'If-Modified-Since': new Date().toUTCString()
-        }})
-    assert.strictEqual(result.response.statusCode, 304)
-    result = await get({
-        port: port,
-        path: `/search?q=${encodeURIComponent('quary')}`,
-        headers: {
-            'If-Modified-Since': new Date(0).toUTCString()
-        }})
-    assert.strictEqual(result.response.statusCode, 200)
-}
-
-function main() {
-    let port = null
-    const child = child_process.spawn(process.argv[2], {
-        shell: true,
-        stdio: [0, 'pipe', 2]
+        result = await get(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master`)
+        assert.strictEqual(result.response.statusCode, 200)
+        assert.strictEqual(result.response.headers['content-type'], 'application/json')
+        assert.strictEqual(result.json.results.length, 12)
     })
 
-    const rl = readline.createInterface({
-        input: child.stdout
+    it('should return 304 if index hasn\'t changed', async () => {
+        const result = await get({
+            port: port,
+            path: `/search?q=${encodeURIComponent('quary')}`,
+            headers: {
+                'If-Modified-Since': new Date().toUTCString()
+            }})
+        assert.strictEqual(result.response.statusCode, 304)
     })
 
-    rl.on('line', async (line) => {
-        const match = line.match(/Listening on port ([0-9]+)/)
-        if (match) {
-            port = parseInt(match[1])
-        }
-
-        if (line.match(/Loaded new index/)) {
-            try {
-                await test(port)
-            } catch (err) {
-                console.error(err)
-            } finally {
-                process.kill(child.pid, 'SIGINT')
-            }
-        }
+    it('should NOT return 304 if index has changed', async () => {
+        const result = await get({
+            port: port,
+            path: `/search?q=${encodeURIComponent('quary')}`,
+            headers: {
+                'If-Modified-Since': new Date(0).toUTCString()
+            }})
+        assert.strictEqual(result.response.statusCode, 200)
     })
 
-    rl.on('end', () => {
-        rl.close()
+    after('shutting down', function() {
+        process.kill(child.pid, 'SIGINT')
     })
-}
-
-main()
+})
