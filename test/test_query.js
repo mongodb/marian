@@ -34,4 +34,29 @@ describe('Query', () => {
         assert.deepStrictEqual(query.terms, ['officially', 'supported'])
         assert.deepStrictEqual(query.phrases, ['officially supported'])
     })
+
+    describe('#checkPhrases', () => {
+        it('should match phrases with adjacent words', () => {
+            const query = (new Query('"Quoth the raven"'))
+            const match = {
+                matchData: {
+                    metadata: {
+                        quoth: { text: { pos: [0] } },
+                        raven: { text: { pos: [1] } }
+                    }}}
+            assert.ok(query.checkPhrases(['text'], match))
+        })
+
+        it('should refuse phrases without adjacent words', () => {
+            const query = (new Query('"Quoth the raven"'))
+            const match = {
+                matchData: {
+                    metadata: {
+                        quoth: { text: { pos: [0] } },
+                        raven: { text: { pos: [2] } }
+                    }}}
+            assert.ok(!query.checkPhrases(['text'], match))
+        })
+    })
 })
+
