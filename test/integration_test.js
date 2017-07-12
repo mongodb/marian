@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node, mocha */
 'use strict'
 
 const assert = require('assert')

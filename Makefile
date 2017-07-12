@@ -13,7 +13,7 @@ lint: node_modules/.CURRENT
 test: node_modules/.CURRENT
 	${MOCHA} test/test_*.js
 
-integration: node_modules/.CURRENT
+integration: lint node_modules/.CURRENT
 	${MOCHA} --timeout 5000 test/*.js
 
 run:
