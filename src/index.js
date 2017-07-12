@@ -170,15 +170,18 @@ function workerIndexer() {
             this.field('title')
             this.field('text')
 
+            let id = 0
             for (const manifest of manifests) {
                 for (const doc of manifest.documents) {
                     this.add({
-                        id: doc.url,
+                        id: id,
                         title: doc.title,
                         text: doc.text,
                     })
 
-                    documents[doc.url] = doc
+                    doc.id = id
+                    documents[doc.id] = doc
+                    id += 1
                 }
             }
         })
