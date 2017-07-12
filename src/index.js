@@ -179,8 +179,7 @@ function workerIndexer() {
                         text: doc.text,
                     })
 
-                    doc.id = id
-                    documents[doc.id] = doc
+                    documents[id] = doc
                     id += 1
                 }
             }
