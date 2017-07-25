@@ -142,18 +142,17 @@ function workerIndexer() {
 
     const words = new Set()
 
+    // Define a pipeline function that stores the token offset as metadata
+    function pipelineFunction(token, pos) {
+        token.metadata['pos'] = pos
+        words.add(token.str)
+        return token
+    }
+
+    // Register the pipeline function so the index can be serialised
+    lunr.Pipeline.registerFunction(pipelineFunction, 'tokenPositionMetadata')
+
     function tokenPositionPlugin(builder) {
-        // Define a pipeline function that stores the token offset as metadata
-
-        var pipelineFunction = function (token, pos) {
-            token.metadata['pos'] = pos
-            words.add(token.str)
-            return token
-        }
-
-        // Register the pipeline function so the index can be serialised
-        lunr.Pipeline.registerFunction(pipelineFunction, 'tokenPositionMetadata')
-
         // Add the pipeline function to the indexing pipeline
         builder.pipeline.before(lunr.stemmer, pipelineFunction)
 
