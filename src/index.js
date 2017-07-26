@@ -264,17 +264,10 @@ class Index {
             }
 
             const searchProperty = matches[1]
-            let data
-            try {
-                data = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('getObject', {
-                    Bucket: bucketName,
-                    Key: bucketEntry.Key,
-                    IfModifiedSince: this.manifestSyncDates.get(searchProperty)
-                })
-            } catch(err) {
-                if (err.code === 'NotModified') { continue }
-                throw err
-            }
+            const data = await util.promisify(s3.makeUnauthenticatedRequest.bind(s3))('getObject', {
+                Bucket: bucketName,
+                Key: bucketEntry.Key
+            })
 
             manifests.push({
                 body: JSON.parse(data.Body),
