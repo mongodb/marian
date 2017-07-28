@@ -356,7 +356,9 @@ function isStopWord(word) {
 }
 
 function tokenize(text) {
-    return text.split(/[\s-]+/).map((token) => token.toLocaleLowerCase().trim())
+    return text.split(/[^\w]+/).
+        map((token) => token.toLocaleLowerCase().trim()).
+        filter((token) => token.length > 1)
 }
 
 exports.stem = stemmer.stem
