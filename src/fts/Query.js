@@ -59,6 +59,7 @@ class Query {
     constructor(queryString) {
         this.terms = new Set()
         this.phrases = []
+        this.stemmedPhrases = []
         this.filter = () => true
 
         const parts = queryString.split(/((?:\s+|^)"[^"]+"(?:\s+|$))/)
@@ -77,12 +78,12 @@ class Query {
                 }
 
                 const phrase = phraseMatch[1].toLowerCase().trim()
+                this.phrases.push(phrase)
+
                 const phraseParts = processPart(phrase)
-                this.phrases.push(phraseParts.map((term) => stem(term)))
+                this.stemmedPhrases.push(phraseParts.map((term) => stem(term)))
                 this.addTerms(phraseParts)
             }
-
-            this.stemmedTerms = new Set(Array.from(this.terms).map((term) => stem(term)))
         }
     }
 
@@ -93,7 +94,7 @@ class Query {
      * @return {boolean} True if the given match contains this query's phrases.
      */
     checkPhrases(tokens) {
-        for (const phraseTokens of this.phrases) {
+        for (const phraseTokens of this.stemmedPhrases) {
             let haveMatch = false
 
             if (haveContiguousKeywords(phraseTokens, tokens)) {

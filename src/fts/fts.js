@@ -302,15 +302,16 @@ class FTSIndex {
         }
 
         const matchSet = new Map()
+        const stemmedTerms = new Set(query.terms.map((term) => stem(term)))
 
-        for (const tuple of this.collectMatchesFromTrie(query.stemmedTerms)) {
+        for (const tuple of this.collectMatchesFromTrie(stemmedTerms)) {
             const [docID, terms] = tuple
             if (!query.filter(docID)) { continue }
 
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                const exactMatchMultiplier = query.stemmedTerms.has(term) ? 10 : 1
+                const exactMatchMultiplier = stemmedTerms.has(term) ? 10 : 1
 
                 let termScore = 0
                 for (const [fieldName, field] of this.fields.entries()) {
@@ -323,7 +324,7 @@ class FTSIndex {
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
                     termScore += dirichletPlus(1, termFrequencyInDoc, termProbability, docEntry.len,
-                        query.stemmedTerms.size) * field.weight * exactMatchMultiplier * field.lengthWeight *
+                        stemmedTerms.size) * field.weight * exactMatchMultiplier * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
