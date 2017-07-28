@@ -239,6 +239,26 @@ class FTSIndex {
         this.terms = new Map()
         this.termID = 0
         this.documentWeights = new Map()
+
+        this.wordCorrelations = new Map()
+    }
+
+    correlateWord(word, synonym, closeness) {
+        word = stem(word)
+        synonym = stem(synonym)
+        const correlationEntry = this.wordCorrelations.get(word)
+        if (!correlationEntry) {
+            this.wordCorrelations.set(word, [[synonym, closeness]])
+        } else {
+            correlationEntry.push([synonym, closeness])
+        }
+
+        const wordEntry = this.wordCorrelations.get(synonym)
+        if (!wordEntry) {
+            this.wordCorrelations.set(synonym, [[word, closeness]])
+        } else {
+            wordEntry.push([word, closeness])
+        }
     }
 
     add(document, onToken) {
@@ -283,9 +303,9 @@ class FTSIndex {
         }
     }
 
-    collectMatchesFromTrie(query) {
+    collectMatchesFromTrie(terms) {
         const resultSet = []
-        for (const term of query) {
+        for (const term of terms) {
             const matches = this.trie.search(term, true)
             for (const match of matches.entries()) {
                 resultSet.push(match)
@@ -301,29 +321,38 @@ class FTSIndex {
         }
 
         const matchSet = new Map()
-        const stemmedTerms = new Set(Array.from(query.terms).map((term) => stem(term)))
+        const stemmedTerms = new Map(Array.from(query.terms).map((term) => [stem(term), 1]))
 
-        for (const tuple of this.collectMatchesFromTrie(stemmedTerms)) {
+        for (const term of stemmedTerms.keys()) {
+            const correlations = this.wordCorrelations.get(term)
+            if (!correlations) { continue }
+
+            for (const [correlation, weight] of correlations) {
+                if (stemmedTerms.has(correlation)) { continue }
+                stemmedTerms.set(correlation, weight)
+            }
+        }
+
+        for (const tuple of this.collectMatchesFromTrie(stemmedTerms.keys())) {
             const [docID, terms] = tuple
             if (!query.filter(docID)) { continue }
 
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                const exactMatchMultiplier = stemmedTerms.has(term) ? 10 : 1
-
                 let termScore = 0
                 for (const [fieldName, field] of this.fields.entries()) {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
 
+                    const termWeight = stemmedTerms.get(term) || 0.1
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
                     const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / field.totalTokensSeen
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
-                    termScore += dirichletPlus(1, termFrequencyInDoc, termProbability, docEntry.len,
-                        stemmedTerms.size) * field.weight * exactMatchMultiplier * field.lengthWeight *
+                    termScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
+                        stemmedTerms.size) * field.weight * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 

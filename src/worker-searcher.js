@@ -89,6 +89,12 @@ function sync(manifests) {
         title: 10
     })
 
+    newIndex.correlateWord('regexp', 'regex', 0.6)
+    newIndex.correlateWord('regular', 'regex', 0.4)
+    newIndex.correlateWord('expression', 'regex', 0.25)
+    newIndex.correlateWord('ip', 'address', 0.1)
+    newIndex.correlateWord('join', 'lookup', 0.6)
+
     const words = new Set()
     const newDocuments = Object.create(null)
     let id = 0
