@@ -59,6 +59,7 @@ class Query {
     constructor(queryString) {
         this.terms = new Set()
         this.phrases = []
+        this.filter = () => true
 
         const parts = queryString.split(/((?:\s+|^)"[^"]+"(?:\s+|$))/)
         let inQuotes = false

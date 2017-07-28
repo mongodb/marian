@@ -305,6 +305,7 @@ class FTSIndex {
 
         for (const tuple of this.collectMatchesFromTrie(query.stemmedTerms)) {
             const [docID, terms] = tuple
+            if (!query.filter(docID)) { continue }
 
             for (const term of terms) {
                 const termEntry = this.terms.get(term)

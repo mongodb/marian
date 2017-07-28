@@ -254,8 +254,6 @@ class Index {
             const documents = []
             for (const doc of manifest.body.documents) {
                 manifest.url = manifest.body.url.replace(/\/+$/, '')
-                doc.searchProperty = manifest.searchProperty
-                doc.includeInGlobalSearch = manifest.body.includeInGlobalSearch
                 doc.slug = doc.slug.replace(/^\/+/, '')
                 doc.url = `${manifest.body.url}/${doc.slug}`
                 documents.push(doc)
@@ -265,7 +263,8 @@ class Index {
 
             return {
                 documents: documents,
-                searchProperty: manifest.searchProperty
+                searchProperty: manifest.searchProperty,
+                includeInGlobalSearch: manifest.body.includeInGlobalSearch
             }
         })
 

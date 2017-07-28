@@ -30,20 +30,14 @@ function search(queryString, searchProperties) {
         throw new Error('query-too-long')
     }
 
-    let rawResults = index.search(parsedQuery)
+    if (searchProperties.length) {
+        const properties = new Set(searchProperties)
+        parsedQuery.filter = (_id) => properties.has(documents[_id].searchProperty)
+    } else {
+        parsedQuery.filter = (_id) => documents[_id].includeInGlobalSearch === true
+    }
 
-    // if (searchProperties.length) {
-    //     const properties = new Set(searchProperties)
-    //     rawResults = rawResults.filter((match) => {
-    //         return properties.has(documents[match._id].searchProperty)
-    //     })
-    // } else {
-    //     rawResults = rawResults.filter((match) => {
-    //         return documents[match._id].includeInGlobalSearch === true
-    //     })
-    // }
-
-    rawResults = rawResults.slice(0, 100)
+    let rawResults = index.search(parsedQuery).slice(0, 100)
 
     // If our results seem poor in quality, check if the query is misspelled
     const misspelled = {}
@@ -110,6 +104,7 @@ function sync(manifests) {
                 title: doc.title,
                 preview: doc.preview,
                 url: doc.url,
+                searchProperty: manifest.searchProperty,
                 includeInGlobalSearch: manifest.includeInGlobalSearch
             }
 
