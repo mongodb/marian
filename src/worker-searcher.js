@@ -86,6 +86,7 @@ function setupSpellingDictionary(words) {
 function sync(manifests) {
     const newIndex = new fts.FTSIndex({
         text: 1,
+        headings: 5,
         title: 10
     })
 
@@ -106,6 +107,7 @@ function sync(manifests) {
                 _id: id,
                 weight: weight,
                 text: doc.text,
+                headings: (doc.headings || []).join(' '),
                 title: doc.title}, (word) => words.add(word))
 
             newDocuments[id] = {
