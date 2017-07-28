@@ -302,7 +302,7 @@ class FTSIndex {
         }
 
         const matchSet = new Map()
-        const stemmedTerms = new Set(query.terms.map((term) => stem(term)))
+        const stemmedTerms = new Set(Array.from(query.terms).map((term) => stem(term)))
 
         for (const tuple of this.collectMatchesFromTrie(stemmedTerms)) {
             const [docID, terms] = tuple

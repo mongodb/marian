@@ -284,6 +284,9 @@ class Index {
 class Marian {
     constructor(bucket) {
         this.index = new Index(bucket)
+
+        // Fire-and-forget loading
+        this.index.load()
     }
 
     start(port) {
@@ -432,21 +435,6 @@ class Marian {
 async function main() {
     Logger.setLevel('info', true)
     const server = new Marian(process.argv[2])
-
-    try {
-        await server.index.load()
-    } catch (err) {
-        log.error('Error while initially loading index')
-        log.error(err)
-        return
-    }
-
-    // Warn about nonfatal error conditions
-    if (server.index.errors.length) {
-        log.error('Got errors while initially loading index')
-        log.error(server.index.errors)
-    }
-
     server.start(8000)
 }
 
