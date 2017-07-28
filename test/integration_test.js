@@ -87,7 +87,7 @@ describe('integration', function() {
             assert.strictEqual(result.response.headers['content-type'], 'application/json')
             assert.deepStrictEqual(result.json.spellingCorrections, {})
             assert.strictEqual(result.json.results.length, 6)
-            assert.strictEqual(result.json.results[0].title, 'Use Cases')
+            assert.strictEqual(result.json.results[0].title, 'Pre-Aggregated Reports (MMAPv1)')
         })
 
         // Test spelling correction
