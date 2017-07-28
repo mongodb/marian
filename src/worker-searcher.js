@@ -78,7 +78,7 @@ function setupSpellingDictionary(words) {
         }
 
         const newWords = dict.dic.utf8Slice().split('\n').filter((w) => {
-            return Object.prototype.hasOwnProperty.call(words, w.split('/', 1))
+            return words.has(w.split('/', 1)[0])
         })
         const newSpelling = nspell(dict.aff, newWords.join('\n'))
         for (const word of words) {
@@ -104,7 +104,7 @@ function sync(manifests) {
                 _id: id,
                 weight: 1,
                 text: doc.text,
-                title: doc.title})
+                title: doc.title}, (word) => words.add(word))
 
             newDocuments[id] = {
                 title: doc.title,

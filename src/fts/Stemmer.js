@@ -217,7 +217,7 @@ class Stemmer {
         const re_5_1 = /ll$/
         const re3_5 = new RegExp(`^${C}${v}[^aeiouwxy]$`)
 
-        this.porterStemmer = (w) => {
+        this.stem = (w) => {
             let stem = null
             let suffix = null
             let re3 = null
@@ -347,10 +347,6 @@ class Stemmer {
             return w
         }
     }
-
-    stem(word) {
-        return this.porterStemmer(word)
-    }
 }
 
 const stemmer = new Stemmer()
@@ -360,12 +356,9 @@ function isStopWord(word) {
 }
 
 function tokenize(text) {
-    return text.split(/[\s-]+/).
-        map((token) => token.toLocaleLowerCase().replace(/^\W+/, '').replace(/\W+$/, '')).
-        filter((word) => !isStopWord(word)).
-        map((token) => stemmer.stem(token))
+    return text.split(/[\s-]+/).map((token) => token.toLocaleLowerCase().trim())
 }
 
-exports.stemmer = stemmer
+exports.stem = stemmer.stem
 exports.isStopWord = isStopWord
 exports.tokenize = tokenize

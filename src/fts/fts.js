@@ -2,7 +2,7 @@
 'use strict'
 
 const Query = require('./Query.js').Query
-const tokenize = require('./Stemmer.js').tokenize
+const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
 function hits(matches, iterations) {
     for (let i = 0; i < iterations; i += 1) {
@@ -242,18 +242,22 @@ class FTSIndex {
         this.documentWeights = new Map()
     }
 
-    add(document) {
+    add(document, onToken) {
         for (const [fieldName, field] of this.fields.entries()) {
             field._lengthWeight = null
             const termFrequencies = new Map()
 
             const text = document[fieldName]
             if (!text) { continue }
-            const tokens = tokenize(text)
+            let tokens = tokenize(text)
+            for (const token of tokens) { onToken(token) }
+            tokens = tokens.filter((word) => !isStopWord(word)).map((token) => stem(token))
             const len = tokens.length
             field.totalTokensSeen += tokens.length
 
             for (const token of tokens) {
+                if (onToken) { onToken(token) }
+
                 this.termID += 1
 
                 let indexEntry = this.terms.get(token)
@@ -299,13 +303,13 @@ class FTSIndex {
 
         const matchSet = new Map()
 
-        for (const tuple of this.collectMatchesFromTrie(query.terms)) {
+        for (const tuple of this.collectMatchesFromTrie(query.stemmedTerms)) {
             const [docID, terms] = tuple
 
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                const exactMatchMultiplier = query.terms.has(term) ? 10 : 1
+                const exactMatchMultiplier = query.stemmedTerms.has(term) ? 10 : 1
 
                 let termScore = 0
                 for (const [fieldName, field] of this.fields.entries()) {
@@ -318,7 +322,7 @@ class FTSIndex {
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
                     termScore += dirichletPlus(1, termFrequencyInDoc, termProbability, docEntry.len,
-                        query.terms.size) * field.weight * exactMatchMultiplier * field.lengthWeight *
+                        query.stemmedTerms.size) * field.weight * exactMatchMultiplier * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
