@@ -94,15 +94,17 @@ function sync(manifests) {
     newIndex.correlateWord('expression', 'regex', 0.25)
     newIndex.correlateWord('ip', 'address', 0.1)
     newIndex.correlateWord('join', 'lookup', 0.6)
+    newIndex.correlateWord('least', 'min', 0.6)
 
     const words = new Set()
     const newDocuments = Object.create(null)
     let id = 0
     for (const manifest of manifests) {
         for (const doc of manifest.documents) {
+            const weight = doc.weight || 1
             newIndex.add({
                 _id: id,
-                weight: 1,
+                weight: weight,
                 text: doc.text,
                 title: doc.title}, (word) => words.add(word))
 
