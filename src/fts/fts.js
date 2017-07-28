@@ -1,4 +1,3 @@
-/* eslint no-unused-vars: "off" */
 'use strict'
 
 const Query = require('./Query.js').Query
