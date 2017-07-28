@@ -10,9 +10,18 @@ class Pool {
         if (this.size <= 0) { throw new Error('Bad pool size') }
 
         this.pool = []
+        this.suspended = new Set()
         for (let i = 0; i < size; i += 1) {
             this.pool.push(f())
         }
+    }
+
+    suspend(element) {
+        this.suspended.add(element)
+    }
+
+    resume(element) {
+        this.suspended.delete(element)
     }
 
     /**
@@ -20,14 +29,30 @@ class Pool {
      * @return {?} The least-loaded element of the pool.
      */
     get() {
-        let min = {backlog: Infinity}
+        const dummy = {backlog: Infinity}
+        let min = dummy
         for (const element of this.pool) {
+            if (this.suspended.has(element)) { continue }
             if (element.backlog < min.backlog) {
                 min = element
             }
         }
 
+        if (dummy === min) {
+            throw new Error('No pool elements available')
+        }
+
         return min
+    }
+
+    getStatus() {
+        return this.pool.map((worker) => {
+            if (!this.suspended.has(worker)) {
+                return worker.backlog
+            }
+
+            return 's'
+        })
     }
 }
 

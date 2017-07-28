@@ -154,7 +154,7 @@ class Index {
                 errors: this.errors,
                 finished: this.lastSyncDate ? this.lastSyncDate.toISOString() : null
             },
-            workers: this.workers.pool.map((worker) => worker.backlog)
+            workers: this.workers.getStatus()
         }
     }
 
@@ -269,7 +269,12 @@ class Index {
         })
 
         for (const worker of this.workers.pool) {
-            await worker.send({sync: manifests})
+            this.workers.suspend(worker)
+            try {
+                await worker.send({sync: manifests})
+            } finally {
+                this.workers.resume(worker)
+            }
         }
 
         this.lastSyncDate = new Date()
