@@ -4,9 +4,9 @@ require('process').title = 'marian-worker'
 const pathModule = require('path')
 
 const dictionary = require('dictionary-en-us')
-const lunr = require('lunr')
 const nspell = require('nspell')
-const Query = require(pathModule.join(__dirname, './src/query.js')).Query
+const Query = require(pathModule.join(__dirname, './src/fts/Query.js')).Query
+const fts = require(pathModule.join(__dirname, './src/fts/fts.js'))
 
 const MAXIMUM_TERMS = 10
 
@@ -26,34 +26,22 @@ function search(queryString, searchProperties) {
     }
 
     const parsedQuery = new Query(queryString)
-    if (parsedQuery.terms.length > MAXIMUM_TERMS) {
+    if (parsedQuery.terms.size > MAXIMUM_TERMS) {
         throw new Error('query-too-long')
     }
 
-    let rawResults = index.query((query) => {
-        for (const term of parsedQuery.terms) {
-            query.term(term, {usePipeline: true, boost: 100})
-            query.term(term, {usePipeline: false, boost: 10, wildcard: lunr.Query.wildcard.TRAILING})
-            query.term(term, {usePipeline: false, boost: 1, editDistance: 1})
-        }
-    })
+    let rawResults = index.search(parsedQuery)
 
-    if (searchProperties.length) {
-        const properties = new Set(searchProperties)
-        rawResults = rawResults.filter((match) => {
-            return properties.has(documents[match.ref].searchProperty)
-        })
-    } else {
-        rawResults = rawResults.filter((match) => {
-            return documents[match.ref].includeInGlobalSearch === true
-        })
-    }
-
-    if (parsedQuery.phrases.length > 0) {
-        rawResults = rawResults.filter((match) => {
-            return parsedQuery.checkPhrases(['title', 'text'], match)
-        })
-    }
+    // if (searchProperties.length) {
+    //     const properties = new Set(searchProperties)
+    //     rawResults = rawResults.filter((match) => {
+    //         return properties.has(documents[match._id].searchProperty)
+    //     })
+    // } else {
+    //     rawResults = rawResults.filter((match) => {
+    //         return documents[match._id].includeInGlobalSearch === true
+    //     })
+    // }
 
     rawResults = rawResults.slice(0, 100)
 
@@ -68,28 +56,8 @@ function search(queryString, searchProperties) {
         }
     }
 
-    // Apply weightings AFTER we slice out the first 100 and check spelling. We
-    // want this to be cheap and have minimal impact on anything except order.
-    for (const match of rawResults) {
-        const doc = documents[match.ref]
-        if (doc.weight !== undefined) {
-            match.score *= doc.weight
-        }
-    }
-    rawResults = rawResults.sort((a, b) => {
-        if (a.score > b.score) {
-            return -1
-        }
-
-        if (a.score < b.score) {
-            return 1
-        }
-
-        return 0
-    })
-
     rawResults = rawResults.map((match) => {
-        const doc = documents[match.ref]
+        const doc = documents[match._id]
         return {
             title: doc.title,
             preview: doc.preview,
@@ -121,6 +89,39 @@ function setupSpellingDictionary(words) {
     })
 }
 
+function sync(manifests) {
+    const newIndex = new fts.FTSIndex({
+        text: 1,
+        title: 10
+    })
+
+    const words = new Set()
+    const newDocuments = Object.create(null)
+    let id = 0
+    for (const manifest of manifests) {
+        for (const doc of manifest.documents) {
+            newIndex.add({
+                _id: id,
+                weight: 1,
+                text: doc.text,
+                title: doc.title})
+
+            newDocuments[id] = {
+                title: doc.title,
+                preview: doc.preview,
+                url: doc.url,
+                includeInGlobalSearch: manifest.includeInGlobalSearch
+            }
+
+            id += 1
+        }
+    }
+
+    setupSpellingDictionary(words)
+    index = newIndex
+    documents = newDocuments
+}
+
 self.onmessage = function(event) {
     const message = event.data.message
     const messageId = event.data.messageId
@@ -131,9 +132,7 @@ self.onmessage = function(event) {
             const results = search(message.search.queryString, properties)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {
-            documents = message.sync.documents
-            index = lunr.Index.load(message.sync.index)
-            setupSpellingDictionary(message.sync.words)
+            sync(message.sync)
             self.postMessage({ok: true, messageId: messageId})
         } else {
             throw new Error('Unknown command')

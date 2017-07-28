@@ -136,64 +136,6 @@ class TaskWorker {
     }
 }
 
-function workerIndexer() {
-    require('process').title = 'marian-indexer'
-    const lunr = require('lunr')
-
-    const words = new Set()
-
-    // Define a pipeline function that stores the token offset as metadata
-    function pipelineFunction(token, pos) {
-        token.metadata['pos'] = pos
-        words.add(token.str)
-        return token
-    }
-
-    // Register the pipeline function so the index can be serialised
-    lunr.Pipeline.registerFunction(pipelineFunction, 'tokenPositionMetadata')
-
-    function tokenPositionPlugin(builder) {
-        // Add the pipeline function to the indexing pipeline
-        builder.pipeline.before(lunr.stemmer, pipelineFunction)
-
-        // Whitelist the pos metadata key
-        builder.metadataWhitelist.push('pos')
-    }
-
-    this.onmessage = function(event) {
-        const manifests = event.data
-
-        const documents = {}
-        const index = lunr(function() {
-            this.use(tokenPositionPlugin)
-            this.field('title')
-            this.field('text')
-
-            let id = 0
-            for (const manifest of manifests) {
-                for (const doc of manifest.documents) {
-                    this.add({
-                        id: id,
-                        title: doc.title,
-                        text: doc.text,
-                    })
-
-                    documents[id] = doc
-                    id += 1
-                }
-            }
-        })
-
-        postMessage({
-            index: index.toJSON(),
-            documents: documents,
-            words: Array.from(words)
-        })
-
-        words.clear()
-    }
-}
-
 class Index {
     constructor(manifestSource) {
         this.manifestSource = manifestSource
@@ -203,20 +145,6 @@ class Index {
         this.lastSyncDate = null
 
         this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
-
-        this.workerIndexer = new Worker(workerIndexer)
-        this.workerIndexer.onmessage = async (event) => {
-            for (const worker of this.workers.pool) {
-                await worker.send({sync: event.data})
-            }
-
-            this.lastSyncDate = new Date()
-            // This date will be used to compare against incoming request HTTP dates,
-            // which truncate the milliseconds.
-            this.lastSyncDate.setMilliseconds(0)
-
-            log.info('Loaded new index')
-        }
     }
 
     getStatus() {
@@ -341,7 +269,16 @@ class Index {
             }
         })
 
-        this.workerIndexer.postMessage(manifests)
+        for (const worker of this.workers.pool) {
+            await worker.send({sync: manifests})
+        }
+
+        this.lastSyncDate = new Date()
+        // This date will be used to compare against incoming request HTTP dates,
+        // which truncate the milliseconds.
+        this.lastSyncDate.setMilliseconds(0)
+
+        log.info('Loaded new index')
     }
 }
 
