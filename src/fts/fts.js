@@ -328,8 +328,8 @@ class FTSIndex {
             if (!correlations) { continue }
 
             for (const [correlation, weight] of correlations) {
-                if (stemmedTerms.has(correlation)) { continue }
-                stemmedTerms.set(correlation, weight)
+                const newWeight = Math.max(stemmedTerms.get(correlation) || 0, weight)
+                stemmedTerms.set(correlation, newWeight)
             }
         }
 
