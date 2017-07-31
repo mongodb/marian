@@ -15,7 +15,7 @@ function hits(matches, iterations) {
             norm += match.authorityScore ** 2
         }
 
-        // normalise the authority scores
+        // Normalise the authority scores
         norm = Math.sqrt(norm)
         for (const match of matches) {
             match.authorityScore /= norm
@@ -38,6 +38,52 @@ function hits(matches, iterations) {
         }
     }
 
+    let meanScore = 0
+    for (const match of matches) {
+        meanScore += match.score
+    }
+    meanScore /= matches.length
+
+    let sum = 0
+    for (const match of matches) {
+        sum += (match.score - meanScore) ** 2
+    }
+
+    const minScore = Math.sqrt((1 / (matches.length - 1) * sum))
+    matches = matches.filter((match) => match.score >= minScore)
+
+    let maxScore = 0
+    let maxAuthorityScore = 0
+    let maxHubScore = 0
+    for (const match of matches) {
+        if (match.score > maxScore) { maxScore = match.score }
+        if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
+        if (match.hubScore > maxHubScore) { maxHubScore = match.hubScore }
+    }
+
+    matches = matches.sort((a, b) => {
+        const aNormalizedScore = a.score / maxScore + 1
+        const bNormalizedScore = b.score / maxScore + 1
+
+        const aNormalizedAuthorityScore = a.authorityScore / maxAuthorityScore + 1
+        const bNormalizedAuthorityScore = b.authorityScore / maxAuthorityScore + 1
+
+        const aNormalizedHubScore = a.hubScore / maxHubScore + 1
+        const bNormalizedHubScore = b.hubScore / maxHubScore + 1
+
+        const aCombinedScore = (Math.log2(aNormalizedScore) * 2) + (Math.log2(aNormalizedAuthorityScore) * 2)
+        const bCombinedScore = (Math.log2(bNormalizedScore) * 2) + (Math.log2(bNormalizedAuthorityScore) * 2)
+
+        if (aCombinedScore < bCombinedScore) {
+            return 1
+        }
+        if (aCombinedScore > bCombinedScore) {
+            return -1
+        }
+
+        return 0
+    })
+
     return matches
 }
 
@@ -53,7 +99,7 @@ function dirichletPlus(termFrequencyInQuery, termFrequencyInDoc,
 
     // In the range suggested by A Study of Smoothing Methods for Language Models
     // Applied to Ad Hoc Information Retrieval [Zhai, Lafferty]
-    const mu = 1000
+    const mu = 2000
 
     // In some fields, the query may never exist, making its probability 0.
     // This is... weird. Return 0 to avoid NaN since while dirichlet+
@@ -199,6 +245,11 @@ class Match {
         this._id = docID
         this.score = score
         this.terms = new Set(initialTerms)
+
+        this.authorityScore = 1.0
+        this.hubScore = 1.0
+        this.incomingNeighbors = new Set()
+        this.outgoingNeighbors = new Set()
     }
 }
 
@@ -239,6 +290,10 @@ class FTSIndex {
         this.terms = new Map()
         this.termID = 0
         this.documentWeights = new Map()
+        this.linkGraph = null
+        this.inverseLinkGraph = null
+        this.urlToId = null
+        this.idToUrl = null
 
         this.wordCorrelations = new Map()
     }
@@ -421,10 +476,38 @@ class FTSIndex {
             }
 
             return 0
-        })
+        }).slice(0, 50)
 
-        return results
-        // matches = hits(matches.slice(0, 200), this.documents.size)
+        const resultsSet = new Map(results.map((match) => [match._id, match]))
+
+        // Expand our link neighborhood
+        for (const match of resultsSet.values()) {
+            const url = this.idToUrl.get(match._id)
+            for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
+                if (_id === null || _id === undefined) {
+                    continue
+                }
+
+                match.outgoingNeighbors.add(_id)
+
+                if (resultsSet.has(_id)) { continue }
+                resultsSet.set(_id, new Match(_id, 0, []))
+            }
+
+            for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
+                if (_id === null || _id === undefined) {
+                    continue
+                }
+
+                match.incomingNeighbors.add(_id)
+            }
+        }
+
+        for (const match of resultsSet.values()) {
+            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
+            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
+        }
+        return hits(Array.from(resultsSet.values()), 100)
     }
 }
 

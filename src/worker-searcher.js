@@ -52,6 +52,7 @@ function search(queryString, searchProperties) {
 
     rawResults = rawResults.map((match) => {
         const doc = documents[match._id]
+        // console.log(doc.title, match.score, match.authorityScore, match.hubScore)
         return {
             title: doc.title,
             preview: doc.preview,
@@ -95,8 +96,13 @@ function sync(manifests) {
     newIndex.correlateWord('ip', 'address', 0.1, true)
     newIndex.correlateWord('join', 'lookup', 0.6)
     newIndex.correlateWord('join', 'sql', 0.25)
+    newIndex.correlateWord('aggregation', 'sql', 0.1)
     newIndex.correlateWord('least', 'min', 0.6)
 
+    const linkGraph = new Map()
+    const inverseLinkGraph = new Map()
+    const idToUrl = new Map()
+    const urlToId = new Map()
     const words = new Set()
     const newDocuments = Object.create(null)
     let id = 0
@@ -118,11 +124,27 @@ function sync(manifests) {
                 includeInGlobalSearch: manifest.includeInGlobalSearch
             }
 
+            linkGraph.set(doc.url, doc.links || [])
+            for (const href of doc.links || []) {
+                let foo = inverseLinkGraph.get(href)
+                if (!foo) {
+                    foo = []
+                    inverseLinkGraph.set(href, foo)
+                }
+
+                foo.push(doc.url)
+            }
+            urlToId.set(doc.url, id)
+            idToUrl.set(id, doc.url)
             id += 1
         }
     }
 
     setupSpellingDictionary(words)
+    newIndex.linkGraph = linkGraph
+    newIndex.inverseLinkGraph = inverseLinkGraph
+    newIndex.urlToId = urlToId
+    newIndex.idToUrl = idToUrl
     index = newIndex
     documents = newDocuments
 }

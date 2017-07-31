@@ -86,7 +86,7 @@ describe('integration', function() {
             assert.strictEqual(result.response.statusCode, 200)
             assert.strictEqual(result.response.headers['content-type'], 'application/json')
             assert.deepStrictEqual(result.json.spellingCorrections, {})
-            assert.strictEqual(result.json.results.length, 6)
+            assert.strictEqual(result.json.results.length, 2)
             assert.strictEqual(result.json.results[0].title, 'Pre-Aggregated Reports (MMAPv1)')
         })
 
@@ -103,7 +103,7 @@ describe('integration', function() {
             let result = await request(`http://localhost:${port}/search?q=aggregation`)
             assert.strictEqual(result.response.statusCode, 200)
             assert.strictEqual(result.response.headers['content-type'], 'application/json')
-            assert.strictEqual(result.json.results.length, 18)
+            assert.strictEqual(result.json.results.length, 2)
 
             const result2 = await request(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master,bi-connector-master`)
             assert.deepStrictEqual(result.json, result2.json)
@@ -111,7 +111,7 @@ describe('integration', function() {
             result = await request(`http://localhost:${port}/search?q=aggregation&searchProperty=mongodb-ecosystem-master`)
             assert.strictEqual(result.response.statusCode, 200)
             assert.strictEqual(result.response.headers['content-type'], 'application/json')
-            assert.strictEqual(result.json.results.length, 12)
+            assert.strictEqual(result.json.results.length, 2)
         })
 
         it('should return 304 if index hasn\'t changed', async () => {
