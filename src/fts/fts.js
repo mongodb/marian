@@ -398,7 +398,7 @@ class FTSIndex {
         return resultSet
     }
 
-    search(query) {
+    search(query, useHits) {
         if (typeof query === 'string') {
             query = new Query(query)
         }
@@ -477,6 +477,10 @@ class FTSIndex {
 
             return 0
         }).slice(0, 50)
+
+        if (!useHits) {
+            return results
+        }
 
         const resultsSet = new Map(results.map((match) => [match._id, match]))
 

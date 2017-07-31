@@ -26,6 +26,7 @@ const MAXIMUM_QUERY_LENGTH = 100
 // This prevents the server from getting bogged down for unbounded periods of time.
 const MAXIMUM_BACKLOG = 10
 const WARNING_BACKLOG = 8
+const SLOW_BACKLOG = 5
 
 const log = new Logger({
     showTimestamp: true,
@@ -164,9 +165,13 @@ class Index {
     }
 
     search(queryString, searchProperty) {
-        return this.workers.get().send({search: {
+        const worker = this.workers.get()
+        const useHits = worker.backlog <= SLOW_BACKLOG
+
+        return worker.send({search: {
             queryString: queryString,
-            searchProperty: searchProperty
+            searchProperty: searchProperty,
+            useHits: useHits
         }}).then((message) => message.results)
     }
 

@@ -18,9 +18,10 @@ let documents = {}
  * Search the index, and return results within the given searchProperty.
  * @param {string} queryString The query string.
  * @param {[string]} searchProperties The properties to search. If empty, all results are returned.
+ * @param {boolean} useHits True if HITS link analysis should be performed.
  * @return {{results: [{title: String, preview: String, url: String}], spellingCorrections: Object}}
  */
-function search(queryString, searchProperties) {
+function search(queryString, searchProperties, useHits) {
     if (!index) {
         throw new Error('still-indexing')
     }
@@ -37,7 +38,7 @@ function search(queryString, searchProperties) {
         parsedQuery.filter = (_id) => documents[_id].includeInGlobalSearch === true
     }
 
-    let rawResults = index.search(parsedQuery).slice(0, 100)
+    let rawResults = index.search(parsedQuery, useHits)
 
     // If our results seem poor in quality, check if the query is misspelled
     const misspelled = {}
@@ -156,7 +157,7 @@ self.onmessage = function(event) {
     try {
         if (message.search !== undefined) {
             const properties = (message.search.searchProperty || '').split(',').filter((x) => x)
-            const results = search(message.search.queryString, properties)
+            const results = search(message.search.queryString, properties, message.search.useHits)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {
             sync(message.sync)
