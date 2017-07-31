@@ -39,7 +39,7 @@ class Pool {
         }
 
         if (dummy === min) {
-            throw new Error('No pool elements available')
+            throw new Error('pool-unavailable')
         }
 
         return min

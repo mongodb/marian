@@ -46,6 +46,6 @@ describe('Pool', () => {
 
         assert.throws(() => {
             pool.get()
-        }, /No pool elements available/)
+        }, /pool-unavailable/)
     })
 })

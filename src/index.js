@@ -145,6 +145,11 @@ class Index {
         this.lastSyncDate = null
 
         this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
+
+        // Suspend all of our workers until we have an index
+        for (const worker of this.workers.pool) {
+            this.workers.suspend(worker)
+        }
     }
 
     getStatus() {
@@ -268,6 +273,11 @@ class Index {
             }
         })
 
+        this.lastSyncDate = new Date()
+        // This date will be used to compare against incoming request HTTP dates,
+        // which truncate the milliseconds.
+        this.lastSyncDate.setMilliseconds(0)
+
         for (const worker of this.workers.pool) {
             this.workers.suspend(worker)
             try {
@@ -276,11 +286,6 @@ class Index {
                 this.workers.resume(worker)
             }
         }
-
-        this.lastSyncDate = new Date()
-        // This date will be used to compare against incoming request HTTP dates,
-        // which truncate the milliseconds.
-        this.lastSyncDate.setMilliseconds(0)
 
         log.info('Loaded new index')
     }
@@ -414,7 +419,7 @@ class Marian {
         try {
             results = await this.index.search(query, parsedUrl.query.searchProperty)
         } catch (err) {
-            if (err.message === 'still-indexing' || err.message === 'backlog-exceeded') {
+            if (err.message === 'still-indexing' || err.message === 'backlog-exceeded' || err.message === 'pool-unavailable') {
                 // Search index isn't yet loaded, or our backlog is out of control
                 res.writeHead(503, headers)
                 res.end('[]')
