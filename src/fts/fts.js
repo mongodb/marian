@@ -243,9 +243,11 @@ class FTSIndex {
         this.wordCorrelations = new Map()
     }
 
-    correlateWord(word, synonym, closeness) {
-        word = stem(word)
+    // word can be multiple tokens. synonym must be a single token.
+    correlateWord(word, synonym, closeness, symmetric) {
+        word = tokenize(word).map((w) => stem(w)).join(' ')
         synonym = stem(synonym)
+
         const correlationEntry = this.wordCorrelations.get(word)
         if (!correlationEntry) {
             this.wordCorrelations.set(word, [[synonym, closeness]])
@@ -253,12 +255,38 @@ class FTSIndex {
             correlationEntry.push([synonym, closeness])
         }
 
-        const wordEntry = this.wordCorrelations.get(synonym)
-        if (!wordEntry) {
-            this.wordCorrelations.set(synonym, [[word, closeness]])
-        } else {
-            wordEntry.push([word, closeness])
+        if (symmetric) {
+            const wordEntry = this.wordCorrelations.get(synonym)
+            if (!wordEntry) {
+                this.wordCorrelations.set(synonym, [[word, closeness]])
+            } else {
+                wordEntry.push([word, closeness])
+            }
         }
+    }
+
+    collectCorrelations(terms) {
+        const stemmedTerms = new Map(terms.map((term) => [stem(term), 1]))
+
+        for (let i = 0; i < terms.length; i += 1) {
+            const pair = [stem(terms[i])]
+
+            if (i < terms.length - 1) {
+                pair.push(`${pair[0]} ${stem(terms[i+1])}`)
+            }
+
+            for (const term of pair) {
+                const correlations = this.wordCorrelations.get(term)
+                if (!correlations) { continue }
+
+                for (const [correlation, weight] of correlations) {
+                    const newWeight = Math.max(stemmedTerms.get(correlation) || 0, weight)
+                    stemmedTerms.set(correlation, newWeight)
+                }
+            }
+        }
+
+        return stemmedTerms
     }
 
     add(document, onToken) {
@@ -321,7 +349,8 @@ class FTSIndex {
         }
 
         const matchSet = new Map()
-        const stemmedTerms = new Map(Array.from(query.terms).map((term) => [stem(term), 1]))
+        const originalTerms = new Set(query.terms)
+        const stemmedTerms = this.collectCorrelations(Array.from(query.terms))
 
         for (const term of stemmedTerms.keys()) {
             const correlations = this.wordCorrelations.get(term)
@@ -352,7 +381,7 @@ class FTSIndex {
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
                     termScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
-                        stemmedTerms.size) * field.weight * field.lengthWeight *
+                        originalTerms.size) * field.weight * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
