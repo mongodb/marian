@@ -51,9 +51,9 @@ function dirichletPlus(termFrequencyInQuery, termFrequencyInDoc,
     termProbabilityInLanguage, docLength, queryLength) {
     const delta = 0.05
 
-    // Suggested by A Study of Smoothing Methods for Language Models
+    // In the range suggested by A Study of Smoothing Methods for Language Models
     // Applied to Ad Hoc Information Retrieval [Zhai, Lafferty]
-    const mu = 2000
+    const mu = 1000
 
     // In some fields, the query may never exist, making its probability 0.
     // This is... weird. Return 0 to avoid NaN since while dirichlet+
