@@ -295,7 +295,7 @@ class FTSIndex {
     }
 
     // word can be multiple tokens. synonym must be a single token.
-    correlateWord(word, synonym, closeness, symmetric) {
+    correlateWord(word, synonym, closeness) {
         word = tokenize(word).map((w) => stem(w)).join(' ')
         synonym = stem(synonym)
 
@@ -304,15 +304,6 @@ class FTSIndex {
             this.wordCorrelations.set(word, [[synonym, closeness]])
         } else {
             correlationEntry.push([synonym, closeness])
-        }
-
-        if (symmetric) {
-            const wordEntry = this.wordCorrelations.get(synonym)
-            if (!wordEntry) {
-                this.wordCorrelations.set(synonym, [[word, closeness]])
-            } else {
-                wordEntry.push([word, closeness])
-            }
         }
     }
 
