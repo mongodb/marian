@@ -285,10 +285,11 @@ class FTSIndex {
         this.terms = new Map()
         this.termID = 0
         this.documentWeights = new Map()
-        this.linkGraph = null
-        this.inverseLinkGraph = null
-        this.urlToId = null
-        this.idToUrl = null
+
+        this.linkGraph = new Map()
+        this.inverseLinkGraph = new Map()
+        this.urlToId = new Map()
+        this.idToUrl = new Map()
 
         this.wordCorrelations = new Map()
     }
@@ -340,6 +341,21 @@ class FTSIndex {
     }
 
     add(document, onToken) {
+        if (document.links !== undefined && document.url !== undefined) {
+            this.linkGraph.set(document.url, document.links || [])
+            for (const href of document.links || []) {
+                let incomingLinks = this.inverseLinkGraph.get(href)
+                if (!incomingLinks) {
+                    incomingLinks = []
+                    this.inverseLinkGraph.set(href, incomingLinks)
+                }
+
+                incomingLinks.push(document.url)
+            }
+            this.urlToId.set(document.url, document._id)
+            this.idToUrl.set(document._id, document.url)
+        }
+
         for (const [fieldName, field] of this.fields.entries()) {
             field._lengthWeight = null
             const termFrequencies = new Map()
