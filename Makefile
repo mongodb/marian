@@ -8,7 +8,7 @@ ESLINT ?= ./node_modules/.bin/eslint
 all: lint test
 
 lint: node_modules/.CURRENT
-	${ESLINT} src/*.js test/*.js
+	${ESLINT} src/*.js src/fts/*.js test/*.js
 
 test: node_modules/.CURRENT
 	${MOCHA} test/test_*.js

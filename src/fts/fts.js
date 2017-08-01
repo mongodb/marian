@@ -54,11 +54,9 @@ function hits(matches, iterations) {
 
     let maxScore = 0
     let maxAuthorityScore = 0
-    let maxHubScore = 0
     for (const match of matches) {
         if (match.score > maxScore) { maxScore = match.score }
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
-        if (match.hubScore > maxHubScore) { maxHubScore = match.hubScore }
     }
 
     matches = matches.sort((a, b) => {
@@ -67,9 +65,6 @@ function hits(matches, iterations) {
 
         const aNormalizedAuthorityScore = a.authorityScore / maxAuthorityScore + 1
         const bNormalizedAuthorityScore = b.authorityScore / maxAuthorityScore + 1
-
-        const aNormalizedHubScore = a.hubScore / maxHubScore + 1
-        const bNormalizedHubScore = b.hubScore / maxHubScore + 1
 
         const aCombinedScore = (Math.log2(aNormalizedScore) * 2) + (Math.log2(aNormalizedAuthorityScore) * 2)
         const bCombinedScore = (Math.log2(bNormalizedScore) * 2) + (Math.log2(bNormalizedAuthorityScore) * 2)
