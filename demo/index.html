@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Marian Demo</title>
+<meta charset="utf-8">
+<link rel="preload" href="demo-worker.js" as="worker">
+<link rel="preload" href="manual-master.json" as="fetch">
+<style>
+.search {
+    width: 600px;
+}
+
+ul {
+    padding-left: 0;
+    list-style-type: none;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+.good {
+    background-color: lightgreen;
+}
+
+.bad {
+    background-color: pink;
+}
+</style>
+<body>
+<input class="search" disabled>
+<button class="update">Search</button>
+<div>
+    <label>Use HITS<input class="use-hits" type="checkbox"></label>
+</div>
+<div>
+    <label>mu<input type=number class="mu"></label>
+    <label>delta<input type=float class="delta"></label>
+</div>
+<div>
+    <label>Ranking function<textarea class="ranking" autocomplete="off" spellcheck="false" wrap="false" cols=100 rows=8></textarea></label>
+</div>
+<table class="results">
+</table>
+
+<script defer src="demo.js"></script>
+</body>
+</html>

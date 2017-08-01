@@ -3,7 +3,13 @@
 const Query = require('./Query.js').Query
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
-function hits(matches, iterations) {
+function scoreMatches(relevancy, maxRelevancy, authorityScore, maxAuthorityScore) {
+    const normalizedRelevancy = relevancy / maxRelevancy + 1
+    const normalizedAuthorityScore = authorityScore / maxAuthorityScore + 1
+    return (Math.log2(normalizedRelevancy) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+}
+
+function hits(matches, iterations, scoringFunction) {
     for (let i = 0; i < iterations; i += 1) {
         let norm = 0
         // Update all authority scores
@@ -38,41 +44,41 @@ function hits(matches, iterations) {
         }
     }
 
-    let meanScore = 0
+    let meanRelevancy = 0
     for (const match of matches) {
-        meanScore += match.score
+        meanRelevancy += match.relevancy
     }
-    meanScore /= matches.length
+    meanRelevancy /= matches.length
 
     let sum = 0
     for (const match of matches) {
-        sum += (match.score - meanScore) ** 2
+        sum += (match.relevancy - meanRelevancy) ** 2
     }
 
-    const minScore = Math.sqrt((1 / (matches.length - 1) * sum))
-    matches = matches.filter((match) => match.score >= minScore)
+    const minRelevancy = Math.sqrt((1 / (matches.length - 1) * sum))
+    matches = matches.filter((match) => match.relevancy >= minRelevancy)
 
-    let maxScore = 0
+    let maxRelevancy = 0
     let maxAuthorityScore = 0
+    let maxHubScore = 0
     for (const match of matches) {
-        if (match.score > maxScore) { maxScore = match.score }
+        if (match.relevancy > maxRelevancy) { maxRelevancy = match.relevancy }
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
+        if (match.hubScore > maxHubScore) { maxHubScore = match.hubScore }
+    }
+
+    for (const match of matches) {
+        match.score = scoringFunction(
+            match.relevancy, maxRelevancy,
+            match.authorityScore, maxAuthorityScore,
+            match.hubScore, maxHubScore)
     }
 
     matches = matches.sort((a, b) => {
-        const aNormalizedScore = a.score / maxScore + 1
-        const bNormalizedScore = b.score / maxScore + 1
-
-        const aNormalizedAuthorityScore = a.authorityScore / maxAuthorityScore + 1
-        const bNormalizedAuthorityScore = b.authorityScore / maxAuthorityScore + 1
-
-        const aCombinedScore = (Math.log2(aNormalizedScore) * 2) + (Math.log2(aNormalizedAuthorityScore) * 2)
-        const bCombinedScore = (Math.log2(bNormalizedScore) * 2) + (Math.log2(bNormalizedAuthorityScore) * 2)
-
-        if (aCombinedScore < bCombinedScore) {
+        if (a.score < b.score) {
             return 1
         }
-        if (aCombinedScore > bCombinedScore) {
+        if (a.score > b.score) {
             return -1
         }
 
@@ -89,13 +95,7 @@ function hits(matches, iterations) {
  * Ian Ruthven (Eds.). ACM, New York, NY, USA, 7-16. DOI: https://doi.org/10.1145/2063576.2063584
  */
 function dirichletPlus(termFrequencyInQuery, termFrequencyInDoc,
-    termProbabilityInLanguage, docLength, queryLength) {
-    const delta = 0.05
-
-    // In the range suggested by A Study of Smoothing Methods for Language Models
-    // Applied to Ad Hoc Information Retrieval [Zhai, Lafferty]
-    const mu = 2000
-
+    termProbabilityInLanguage, docLength, queryLength, delta, mu) {
     // In some fields, the query may never exist, making its probability 0.
     // This is... weird. Return 0 to avoid NaN since while dirichlet+
     // prefers rare words, a nonexistent word should probably be ignored.
@@ -236,9 +236,9 @@ class DocumentEntry {
 }
 
 class Match {
-    constructor(docID, score, initialTerms) {
+    constructor(docID, relevancy, initialTerms) {
         this._id = docID
-        this.score = score
+        this.relevancy = relevancy
         this.terms = new Set(initialTerms)
 
         this.authorityScore = 1.0
@@ -285,10 +285,12 @@ class FTSIndex {
         this.terms = new Map()
         this.termID = 0
         this.documentWeights = new Map()
-        this.linkGraph = null
-        this.inverseLinkGraph = null
-        this.urlToId = null
-        this.idToUrl = null
+
+        // HITS graph
+        this.linkGraph = new Map()
+        this.inverseLinkGraph = new Map()
+        this.urlToId = new Map()
+        this.idToUrl = new Map()
 
         this.wordCorrelations = new Map()
     }
@@ -340,6 +342,21 @@ class FTSIndex {
     }
 
     add(document, onToken) {
+        if (document.links !== undefined && document.url !== undefined) {
+            this.linkGraph.set(document.url, document.links || [])
+            for (const href of document.links || []) {
+                let incomingLinks = this.inverseLinkGraph.get(href)
+                if (!incomingLinks) {
+                    incomingLinks = []
+                    this.inverseLinkGraph.set(href, incomingLinks)
+                }
+
+                incomingLinks.push(document.url)
+            }
+            this.urlToId.set(document.url, document._id)
+            this.idToUrl.set(document._id, document.url)
+        }
+
         for (const [fieldName, field] of this.fields.entries()) {
             field._lengthWeight = null
             const termFrequencies = new Map()
@@ -353,7 +370,7 @@ class FTSIndex {
             field.totalTokensSeen += tokens.length
 
             for (const token of tokens) {
-                if (onToken) { onToken(token) }
+                onToken(token)
 
                 this.termID += 1
 
@@ -393,9 +410,23 @@ class FTSIndex {
         return resultSet
     }
 
-    search(query, useHits) {
+    search(query, options) {
         if (typeof query === 'string') {
             query = new Query(query)
+        }
+
+        const delta = options.delta || 0.05
+
+        // In the range suggested by A Study of Smoothing Methods for Language Models
+        // Applied to Ad Hoc Information Retrieval [Zhai, Lafferty]
+        const mu = options.mu || 2000
+
+        let scoringFunction = scoreMatches
+        if (options.ranking) {
+            scoringFunction = new Function(
+                'relevancy', 'maxRelevancy',
+                'authorityScore', 'maxAuthorityScore',
+                'hubScore', 'maxHubScore', options.ranking)
         }
 
         const matchSet = new Map()
@@ -419,7 +450,7 @@ class FTSIndex {
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                let termScore = 0
+                let termRelevancy = 0
                 for (const [fieldName, field] of this.fields.entries()) {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
@@ -430,17 +461,17 @@ class FTSIndex {
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
-                    termScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
-                        originalTerms.size) * field.weight * field.lengthWeight *
+                    termRelevancy += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
+                        originalTerms.size, delta, mu) * field.weight * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
                 const match = matchSet.get(docID)
                 if (match) {
-                    match.score += termScore
+                    match.relevancy += termRelevancy
                     match.terms.add(term)
                 } else {
-                    matchSet.set(docID, new Match(docID, termScore, [term]))
+                    matchSet.set(docID, new Match(docID, termRelevancy, [term]))
                 }
             }
         }
@@ -463,17 +494,17 @@ class FTSIndex {
         }
 
         results = results.sort((a, b) => {
-            if (a.score < b.score) {
+            if (a.relevancy < b.relevancy) {
                 return 1
             }
-            if (a.score > b.score) {
+            if (a.relevancy > b.relevancy) {
                 return -1
             }
 
             return 0
         }).slice(0, 50)
 
-        if (!useHits) {
+        if (!options.useHits) {
             return results
         }
 
@@ -506,7 +537,8 @@ class FTSIndex {
             match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
             match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
         }
-        return hits(Array.from(resultsSet.values()), 100)
+
+        return hits(Array.from(resultsSet.values()), 100, scoringFunction)
     }
 }
 

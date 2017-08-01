@@ -7,6 +7,7 @@ const dictionary = require('dictionary-en-us')
 const nspell = require('nspell')
 const Query = require(pathModule.join(__dirname, './src/fts/Query.js')).Query
 const fts = require(pathModule.join(__dirname, './src/fts/fts.js'))
+const correlations = require(pathModule.join(__dirname, './src/correlations.js')).correlations
 
 const MAXIMUM_TERMS = 10
 
@@ -38,7 +39,7 @@ function search(queryString, searchProperties, useHits) {
         parsedQuery.filter = (_id) => documents[_id].includeInGlobalSearch === true
     }
 
-    let rawResults = index.search(parsedQuery, useHits)
+    let rawResults = index.search(parsedQuery, { useHits: useHits })
 
     // If our results seem poor in quality, check if the query is misspelled
     const misspelled = {}
@@ -92,18 +93,10 @@ function sync(manifests) {
         title: 10
     })
 
-    newIndex.correlateWord('regexp', 'regex', 0.8)
-    newIndex.correlateWord('regular expression', 'regex', 0.8)
-    newIndex.correlateWord('ip', 'address', 0.1, true)
-    newIndex.correlateWord('join', 'lookup', 0.6)
-    newIndex.correlateWord('join', 'sql', 0.25)
-    newIndex.correlateWord('aggregation', 'sql', 0.1)
-    newIndex.correlateWord('least', 'min', 0.6)
+    for (const [term, [synonymn, weight]] of correlations) {
+        newIndex.correlateWord(term, synonymn, weight)
+    }
 
-    const linkGraph = new Map()
-    const inverseLinkGraph = new Map()
-    const idToUrl = new Map()
-    const urlToId = new Map()
     const words = new Set()
     const newDocuments = Object.create(null)
     let id = 0
@@ -112,6 +105,10 @@ function sync(manifests) {
             const weight = doc.weight || 1
             newIndex.add({
                 _id: id,
+
+                links: doc.links,
+                url: doc.url,
+
                 weight: weight,
                 text: doc.text,
                 headings: (doc.headings || []).join(' '),
@@ -125,27 +122,11 @@ function sync(manifests) {
                 includeInGlobalSearch: manifest.includeInGlobalSearch
             }
 
-            linkGraph.set(doc.url, doc.links || [])
-            for (const href of doc.links || []) {
-                let foo = inverseLinkGraph.get(href)
-                if (!foo) {
-                    foo = []
-                    inverseLinkGraph.set(href, foo)
-                }
-
-                foo.push(doc.url)
-            }
-            urlToId.set(doc.url, id)
-            idToUrl.set(id, doc.url)
             id += 1
         }
     }
 
     setupSpellingDictionary(words)
-    newIndex.linkGraph = linkGraph
-    newIndex.inverseLinkGraph = inverseLinkGraph
-    newIndex.urlToId = urlToId
-    newIndex.idToUrl = idToUrl
     index = newIndex
     documents = newDocuments
 }
