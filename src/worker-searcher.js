@@ -7,6 +7,7 @@ const dictionary = require('dictionary-en-us')
 const nspell = require('nspell')
 const Query = require(pathModule.join(__dirname, './src/fts/Query.js')).Query
 const fts = require(pathModule.join(__dirname, './src/fts/fts.js'))
+const correlations = require(pathModule.join(__dirname, './src/correlations.js')).correlations
 
 const MAXIMUM_TERMS = 10
 
@@ -92,13 +93,9 @@ function sync(manifests) {
         title: 10
     })
 
-    newIndex.correlateWord('regexp', 'regex', 0.8)
-    newIndex.correlateWord('regular expression', 'regex', 0.8)
-    newIndex.correlateWord('ip', 'address', 0.1, true)
-    newIndex.correlateWord('join', 'lookup', 0.6)
-    newIndex.correlateWord('join', 'sql', 0.25)
-    newIndex.correlateWord('aggregation', 'sql', 0.1)
-    newIndex.correlateWord('least', 'min', 0.6)
+    for (const [term, [synonymn, weight]] of correlations) {
+        newIndex.correlateWord(term, synonymn, weight)
+    }
 
     const linkGraph = new Map()
     const inverseLinkGraph = new Map()
