@@ -3,10 +3,11 @@
 
 const defaultQuery = 'aggregation, sharded cluster, config servers, find, regex, regular expression, date, count, joins, views'
 const defaultRanking =
-`// relevancy, maxRelevancy, authorityScore, maxAuthority, hubScore, maxHubScore
-const normalizedRelevancy = relevancy / maxRelevancy + 1
-const normalizedAuthorityScore = authorityScore / maxAuthorityScore + 1
-return (Math.log2(normalizedRelevancy) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+`// Parameters: match.relevancyScore, match.authorityScore, match.hubScore,
+// maxRelevancyScore, maxAuthorityScore, maxHubScore
+const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
+const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
+return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
 `
 
 const defaults = {

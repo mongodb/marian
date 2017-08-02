@@ -1,77 +1,90 @@
 'use strict'
 
 const Query = require('./Query.js').Query
+const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
-function scoreMatches(relevancy, maxRelevancy, authorityScore, maxAuthorityScore) {
-    const normalizedRelevancy = relevancy / maxRelevancy + 1
-    const normalizedAuthorityScore = authorityScore / maxAuthorityScore + 1
-    return (Math.log2(normalizedRelevancy) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
+    const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
+    const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
+    return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
 }
 
-function hits(matches, iterations, scoringFunction) {
-    for (let i = 0; i < iterations; i += 1) {
-        let norm = 0
+function filterByRelevancySigma(matches, sigma) {
+    let meanScore = 0
+    for (const match of matches) {
+        meanScore += match.relevancyScore
+    }
+    meanScore /= matches.length
+
+    let sum = 0
+    for (const match of matches) {
+        sum += (match.relevancyScore - meanScore) ** 2
+    }
+
+    const minScore = Math.sqrt((1 / (matches.length - 1) * sum)) * sigma
+    return matches.filter((match) => match.relevancyScore >= minScore)
+}
+
+function hits(matches, scoringFunction, converganceThreshold, maxIterations) {
+    let lastAuthorityNorm = 0
+    let lastHubNorm = 0
+    for (let i = 0; i < maxIterations; i += 1) {
+        let authorityNorm = 0
+
         // Update all authority scores
         for (const match of matches) {
             match.authorityScore = 0
             for (const incomingMatch of match.incomingNeighbors) {
                 match.authorityScore += incomingMatch.hubScore
             }
-            norm += match.authorityScore ** 2
+            authorityNorm += match.authorityScore ** 2
         }
 
         // Normalise the authority scores
-        norm = Math.sqrt(norm)
+        authorityNorm = Math.sqrt(authorityNorm)
         for (const match of matches) {
-            match.authorityScore /= norm
+            match.authorityScore /= authorityNorm
         }
 
         // Update all hub scores
-        norm = 0
+        let hubNorm = 0
         for (const match of matches) {
             match.hubScore = 0
             for (const outgoingMatch of match.outgoingNeighbors) {
                 match.hubScore += outgoingMatch.authorityScore
             }
-            norm += match.hubScore ** 2
+            hubNorm += match.hubScore ** 2
         }
 
         // Normalise the hub scores
-        norm = Math.sqrt(norm)
+        hubNorm = Math.sqrt(hubNorm)
         for (const match of matches) {
-            match.hubScore /= norm
+            match.hubScore /= hubNorm
         }
+
+        if (Math.abs(authorityNorm - lastAuthorityNorm) < converganceThreshold &&
+            Math.abs(hubNorm - lastHubNorm) < converganceThreshold) {
+            break
+        }
+
+        lastAuthorityNorm = authorityNorm
+        lastHubNorm = hubNorm
     }
 
-    let meanRelevancy = 0
-    for (const match of matches) {
-        meanRelevancy += match.relevancy
-    }
-    meanRelevancy /= matches.length
+    matches = filterByRelevancySigma(matches, 1)
 
-    let sum = 0
-    for (const match of matches) {
-        sum += (match.relevancy - meanRelevancy) ** 2
-    }
-
-    const minRelevancy = Math.sqrt((1 / (matches.length - 1) * sum))
-    matches = matches.filter((match) => match.relevancy >= minRelevancy)
-
-    let maxRelevancy = 0
+    let maxRelevancyScore = 0
     let maxAuthorityScore = 0
     let maxHubScore = 0
     for (const match of matches) {
-        if (match.relevancy > maxRelevancy) { maxRelevancy = match.relevancy }
+        if (match.relevancyScore > maxRelevancyScore) { maxRelevancyScore = match.relevancyScore }
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
         if (match.hubScore > maxHubScore) { maxHubScore = match.hubScore }
     }
 
     for (const match of matches) {
-        match.score = scoringFunction(
-            match.relevancy, maxRelevancy,
-            match.authorityScore, maxAuthorityScore,
-            match.hubScore, maxHubScore)
+        match.score = scoringFunction(match, maxRelevancyScore, maxAuthorityScore, maxHubScore)
     }
 
     matches = matches.sort((a, b) => {
@@ -109,101 +122,6 @@ function dirichletPlus(termFrequencyInQuery, termFrequencyInDoc,
     return (termFrequencyInQuery * term2) + term3
 }
 
-class Trie {
-    constructor() {
-        this.trie = new Map([[0, null]])
-    }
-
-    insert(token, id) {
-        let cursor = this.trie
-        let i = 0
-
-        for (; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                cursor.set(code, new Map([[0, null]]))
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        if (cursor.get(0) === null) {
-            cursor.set(0, new Set())
-        }
-
-        cursor.get(0).add(id)
-    }
-
-    remove(token, id) {
-        let cursor = this.trie
-        for (let i = 0; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                return
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        cursor.get(0).delete(id)
-    }
-
-    // Return Map<String, Iterable<String>>
-    search(token, prefixSearch) {
-        let cursor = this.trie
-        for (let i = 0; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                return new Map()
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        if (!prefixSearch) {
-            return new Map(cursor.get(0), [token])
-        }
-
-        const results = new Map()
-        if (cursor.get(0)) {
-            for (const id of cursor.get(0)) {
-                results.set(id, new Set([token]))
-            }
-        }
-
-        const stack = [[cursor, token]]
-        while (stack.length > 0) {
-            const [currentNode, currentToken] = stack.pop()
-            for (const key of currentNode.keys()) {
-                if (key !== 0) {
-                    const nextCursor = currentNode.get(key)
-                    if (nextCursor) {
-                        stack.push([nextCursor, currentToken + String.fromCharCode(key - 1)])
-                    }
-                    continue
-                }
-
-                if (currentNode.get(key) === null) {
-                    continue
-                }
-
-                for (const value of currentNode.get(0)) {
-                    const arr = results.get(value)
-                    if (arr) {
-                        arr.add(currentToken)
-                    } else {
-                        results.set(value, new Set([currentToken]))
-                    }
-                }
-
-                continue
-            }
-        }
-
-        return results
-    }
-}
-
 class TermEntry {
     constructor() {
         this.docs = []
@@ -236,11 +154,12 @@ class DocumentEntry {
 }
 
 class Match {
-    constructor(docID, relevancy, initialTerms) {
+    constructor(docID, relevancyScore, initialTerms) {
         this._id = docID
-        this.relevancy = relevancy
+        this.relevancyScore = relevancyScore
         this.terms = new Set(initialTerms)
 
+        this.score = 0.0
         this.authorityScore = 1.0
         this.hubScore = 1.0
         this.incomingNeighbors = new Set()
@@ -286,7 +205,6 @@ class FTSIndex {
         this.termID = 0
         this.documentWeights = new Map()
 
-        // HITS graph
         this.linkGraph = new Map()
         this.inverseLinkGraph = new Map()
         this.urlToId = new Map()
@@ -296,7 +214,7 @@ class FTSIndex {
     }
 
     // word can be multiple tokens. synonym must be a single token.
-    correlateWord(word, synonym, closeness, symmetric) {
+    correlateWord(word, synonym, closeness) {
         word = tokenize(word).map((w) => stem(w)).join(' ')
         synonym = stem(synonym)
 
@@ -305,15 +223,6 @@ class FTSIndex {
             this.wordCorrelations.set(word, [[synonym, closeness]])
         } else {
             correlationEntry.push([synonym, closeness])
-        }
-
-        if (symmetric) {
-            const wordEntry = this.wordCorrelations.get(synonym)
-            if (!wordEntry) {
-                this.wordCorrelations.set(synonym, [[word, closeness]])
-            } else {
-                wordEntry.push([word, closeness])
-            }
         }
     }
 
@@ -421,12 +330,10 @@ class FTSIndex {
         // Applied to Ad Hoc Information Retrieval [Zhai, Lafferty]
         const mu = options.mu || 2000
 
-        let scoringFunction = scoreMatches
+        let scoringFunction = computeScore
         if (options.ranking) {
             scoringFunction = new Function(
-                'relevancy', 'maxRelevancy',
-                'authorityScore', 'maxAuthorityScore',
-                'hubScore', 'maxHubScore', options.ranking)
+                'match', 'maxRelevancyScore', 'maxAuthorityScore', 'maxHubScore', options.ranking)
         }
 
         const matchSet = new Map()
@@ -450,7 +357,7 @@ class FTSIndex {
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                let termRelevancy = 0
+                let termRelevancyScore = 0
                 for (const [fieldName, field] of this.fields.entries()) {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
@@ -461,24 +368,25 @@ class FTSIndex {
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
-                    termRelevancy += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
+                    termRelevancyScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
                         originalTerms.size, delta, mu) * field.weight * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
                 const match = matchSet.get(docID)
                 if (match) {
-                    match.relevancy += termRelevancy
+                    match.relevancyScore += termRelevancyScore
                     match.terms.add(term)
                 } else {
-                    matchSet.set(docID, new Match(docID, termRelevancy, [term]))
+                    matchSet.set(docID, new Match(docID, termRelevancyScore, [term]))
                 }
             }
         }
 
-        let results = Array.from(matchSet.values())
+        // Create a root set of the core relevant results
+        let rootSet = Array.from(matchSet.values())
         if (query.phrases.length) {
-            results = results.filter((match) => {
+            rootSet = rootSet.filter((match) => {
                 const tokens = new Map()
                 for (const term of match.terms) {
                     const termEntry = this.terms.get(term)
@@ -493,25 +401,25 @@ class FTSIndex {
             })
         }
 
-        results = results.sort((a, b) => {
-            if (a.relevancy < b.relevancy) {
+        rootSet = rootSet.sort((a, b) => {
+            if (a.relevancyScore < b.relevancyScore) {
                 return 1
             }
-            if (a.relevancy > b.relevancy) {
+            if (a.relevancyScore > b.relevancyScore) {
                 return -1
             }
 
             return 0
-        }).slice(0, 50)
+        })
 
         if (!options.useHits) {
-            return results
+            return filterByRelevancySigma(rootSet, 1)
         }
 
-        const resultsSet = new Map(results.map((match) => [match._id, match]))
-
-        // Expand our link neighborhood
-        for (const match of resultsSet.values()) {
+        // Expand our root set's neighbors to create a base set: the set of all
+        // relevant pages, as well as pages that link TO or are linked FROM those pages.
+        const baseSet = new Map(rootSet.map((match) => [match._id, match]))
+        for (const match of Array.from(baseSet.values())) {
             const url = this.idToUrl.get(match._id)
             for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
                 if (_id === null || _id === undefined) {
@@ -520,8 +428,8 @@ class FTSIndex {
 
                 match.outgoingNeighbors.add(_id)
 
-                if (resultsSet.has(_id)) { continue }
-                resultsSet.set(_id, new Match(_id, 0, []))
+                if (baseSet.has(_id)) { continue }
+                baseSet.set(_id, new Match(_id, 0, []))
             }
 
             for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
@@ -530,15 +438,19 @@ class FTSIndex {
                 }
 
                 match.incomingNeighbors.add(_id)
+
+                if (baseSet.has(_id)) { continue }
+                baseSet.set(_id, new Match(_id, 0, []))
             }
         }
 
-        for (const match of resultsSet.values()) {
-            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
-            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
+        for (const match of baseSet.values()) {
+            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
+            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
         }
 
-        return hits(Array.from(resultsSet.values()), 100, scoringFunction)
+        // Run HITS to re-sort our results based on authority
+        return hits(Array.from(baseSet.values()), scoringFunction, 0.00001, 200)
     }
 }
 
