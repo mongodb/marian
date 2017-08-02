@@ -22,10 +22,10 @@ run:
 
 demo: demo/demo.js demo/demo-worker.js lint
 
-demo/demo.js: src/demo/demo.js src/*.js src/fts/*.js
+demo/demo.js: src/demo/demo.js src/*.js src/fts/*.js node_modules/.CURRENT
 	${BROWSERIFY} -o $@ src/demo/demo.js
 
-demo/demo-worker.js: src/demo/demo-worker.js src/*.js src/fts/*.js
+demo/demo-worker.js: src/demo/demo-worker.js src/*.js src/fts/*.js node_modules/.CURRENT
 	${BROWSERIFY} -o $@ src/demo/demo-worker.js
 
 node_modules/.CURRENT: package.json
