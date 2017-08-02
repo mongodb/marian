@@ -9,7 +9,7 @@ function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
 }
 
-function filterByRelevancySigma(matches) {
+function filterByRelevancySigma(matches, sigma) {
     let meanScore = 0
     for (const match of matches) {
         meanScore += match.relevancyScore
@@ -21,7 +21,7 @@ function filterByRelevancySigma(matches) {
         sum += (match.relevancyScore - meanScore) ** 2
     }
 
-    const minScore = Math.sqrt((1 / (matches.length - 1) * sum))
+    const minScore = Math.sqrt((1 / (matches.length - 1) * sum)) * sigma
     return matches.filter((match) => match.relevancyScore >= minScore)
 }
 
@@ -60,7 +60,7 @@ function hits(matches, iterations) {
         }
     }
 
-    matches = filterByRelevancySigma(matches)
+    matches = filterByRelevancySigma(matches, 1)
 
     let maxRelevancyScore = 0
     let maxAuthorityScore = 0
@@ -458,9 +458,10 @@ class FTSIndex {
             }
         }
 
-        let results = Array.from(matchSet.values())
+        // Create a root set of the core relevant results
+        let rootSet = Array.from(matchSet.values())
         if (query.phrases.length) {
-            results = results.filter((match) => {
+            rootSet = rootSet.filter((match) => {
                 const tokens = new Map()
                 for (const term of match.terms) {
                     const termEntry = this.terms.get(term)
@@ -475,7 +476,7 @@ class FTSIndex {
             })
         }
 
-        results = results.sort((a, b) => {
+        rootSet = rootSet.sort((a, b) => {
             if (a.relevancyScore < b.relevancyScore) {
                 return 1
             }
@@ -484,16 +485,16 @@ class FTSIndex {
             }
 
             return 0
-        }).slice(0, 50)
+        })
 
         if (!useHits) {
-            return results
+            return filterByRelevancySigma(rootSet, 1)
         }
 
-        const resultsSet = new Map(results.map((match) => [match._id, match]))
-
-        // Expand our link neighborhood
-        for (const match of resultsSet.values()) {
+        // Expand our root set's neighbors to create a base set: the set of all
+        // relevant pages, as well as pages that link TO or are linked FROM those pages.
+        const baseSet = new Map(rootSet.map((match) => [match._id, match]))
+        for (const match of Array.from(baseSet.values())) {
             const url = this.idToUrl.get(match._id)
             for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
                 if (_id === null || _id === undefined) {
@@ -502,8 +503,8 @@ class FTSIndex {
 
                 match.outgoingNeighbors.add(_id)
 
-                if (resultsSet.has(_id)) { continue }
-                resultsSet.set(_id, new Match(_id, 0, []))
+                if (baseSet.has(_id)) { continue }
+                baseSet.set(_id, new Match(_id, 0, []))
             }
 
             for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
@@ -512,14 +513,19 @@ class FTSIndex {
                 }
 
                 match.incomingNeighbors.add(_id)
+
+                if (baseSet.has(_id)) { continue }
+                baseSet.set(_id, new Match(_id, 0, []))
             }
         }
 
-        for (const match of resultsSet.values()) {
-            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
-            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => resultsSet.get(_id)).filter((match) => Boolean(match)))
+        for (const match of baseSet.values()) {
+            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
+            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
         }
-        return hits(Array.from(resultsSet.values()), 100)
+
+        // Run HITS to re-sort our results based on authority
+        return hits(Array.from(baseSet.values()), 100)
     }
 }
 
