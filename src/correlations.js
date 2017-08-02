@@ -8,6 +8,7 @@ exports.correlations = new Map([
     ['join', ['lookup', 0.6]],
     ['join', ['sql', 0.25]],
     ['aggregation', ['sql', 0.1]],
+    ['aggregation', ['pipeline', 0.1]],
     ['least', ['min', 0.6]],
     ['set security', ['keyfile', 1.0]],
     ['cluster security', ['keyfile', 1.0]]
