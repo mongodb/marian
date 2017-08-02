@@ -1,6 +1,7 @@
 'use strict'
 
 const Query = require('./Query.js').Query
+const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
@@ -122,101 +123,6 @@ function dirichletPlus(termFrequencyInQuery, termFrequencyInDoc,
     const term3 = queryLength * Math.log2(mu / (docLength + mu))
 
     return (termFrequencyInQuery * term2) + term3
-}
-
-class Trie {
-    constructor() {
-        this.trie = new Map([[0, null]])
-    }
-
-    insert(token, id) {
-        let cursor = this.trie
-        let i = 0
-
-        for (; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                cursor.set(code, new Map([[0, null]]))
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        if (cursor.get(0) === null) {
-            cursor.set(0, new Set())
-        }
-
-        cursor.get(0).add(id)
-    }
-
-    remove(token, id) {
-        let cursor = this.trie
-        for (let i = 0; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                return
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        cursor.get(0).delete(id)
-    }
-
-    // Return Map<String, Iterable<String>>
-    search(token, prefixSearch) {
-        let cursor = this.trie
-        for (let i = 0; i < token.length; i += 1) {
-            const code = token.charCodeAt(i) + 1
-            if (!cursor.get(code)) {
-                return new Map()
-            }
-
-            cursor = cursor.get(code)
-        }
-
-        if (!prefixSearch) {
-            return new Map(cursor.get(0), [token])
-        }
-
-        const results = new Map()
-        if (cursor.get(0)) {
-            for (const id of cursor.get(0)) {
-                results.set(id, new Set([token]))
-            }
-        }
-
-        const stack = [[cursor, token]]
-        while (stack.length > 0) {
-            const [currentNode, currentToken] = stack.pop()
-            for (const key of currentNode.keys()) {
-                if (key !== 0) {
-                    const nextCursor = currentNode.get(key)
-                    if (nextCursor) {
-                        stack.push([nextCursor, currentToken + String.fromCharCode(key - 1)])
-                    }
-                    continue
-                }
-
-                if (currentNode.get(key) === null) {
-                    continue
-                }
-
-                for (const value of currentNode.get(0)) {
-                    const arr = results.get(value)
-                    if (arr) {
-                        arr.add(currentToken)
-                    } else {
-                        results.set(value, new Set([currentToken]))
-                    }
-                }
-
-                continue
-            }
-        }
-
-        return results
-    }
 }
 
 class TermEntry {
