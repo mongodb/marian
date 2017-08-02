@@ -25,39 +25,49 @@ function filterByRelevancySigma(matches, sigma) {
     return matches.filter((match) => match.relevancyScore >= minScore)
 }
 
-function hits(matches, iterations) {
-    for (let i = 0; i < iterations; i += 1) {
-        let norm = 0
+function hits(matches, converganceThreshold, maxIterations) {
+    let lastAuthorityNorm = 0
+    let lastHubNorm = 0
+    for (let i = 0; i < maxIterations; i += 1) {
+        let authorityNorm = 0
         // Update all authority scores
         for (const match of matches) {
             match.authorityScore = 0
             for (const incomingMatch of match.incomingNeighbors) {
                 match.authorityScore += incomingMatch.hubScore
             }
-            norm += match.authorityScore ** 2
+            authorityNorm += match.authorityScore ** 2
         }
 
         // Normalise the authority scores
-        norm = Math.sqrt(norm)
+        authorityNorm = Math.sqrt(authorityNorm)
         for (const match of matches) {
-            match.authorityScore /= norm
+            match.authorityScore /= authorityNorm
         }
 
         // Update all hub scores
-        norm = 0
+        let hubNorm = 0
         for (const match of matches) {
             match.hubScore = 0
             for (const outgoingMatch of match.outgoingNeighbors) {
                 match.hubScore += outgoingMatch.authorityScore
             }
-            norm += match.hubScore ** 2
+            hubNorm += match.hubScore ** 2
         }
 
         // Normalise the hub scores
-        norm = Math.sqrt(norm)
+        hubNorm = Math.sqrt(hubNorm)
         for (const match of matches) {
-            match.hubScore /= norm
+            match.hubScore /= hubNorm
         }
+
+        if (Math.abs(authorityNorm - lastAuthorityNorm) < converganceThreshold &&
+            Math.abs(hubNorm - lastHubNorm) < converganceThreshold) {
+            break
+        }
+
+        lastAuthorityNorm = authorityNorm
+        lastHubNorm = hubNorm
     }
 
     matches = filterByRelevancySigma(matches, 1)
@@ -525,7 +535,7 @@ class FTSIndex {
         }
 
         // Run HITS to re-sort our results based on authority
-        return hits(Array.from(baseSet.values()), 100)
+        return hits(Array.from(baseSet.values()), 0.00001, 200)
     }
 }
 
