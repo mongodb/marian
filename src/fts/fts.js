@@ -3,6 +3,28 @@
 const Query = require('./Query.js').Query
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
+function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
+    const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
+    const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
+    return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+}
+
+function filterByRelevancySigma(matches) {
+    let meanScore = 0
+    for (const match of matches) {
+        meanScore += match.relevancyScore
+    }
+    meanScore /= matches.length
+
+    let sum = 0
+    for (const match of matches) {
+        sum += (match.relevancyScore - meanScore) ** 2
+    }
+
+    const minScore = Math.sqrt((1 / (matches.length - 1) * sum))
+    return matches.filter((match) => match.relevancyScore >= minScore)
+}
+
 function hits(matches, iterations) {
     for (let i = 0; i < iterations; i += 1) {
         let norm = 0
@@ -38,41 +60,24 @@ function hits(matches, iterations) {
         }
     }
 
-    let meanScore = 0
-    for (const match of matches) {
-        meanScore += match.score
-    }
-    meanScore /= matches.length
+    matches = filterByRelevancySigma(matches)
 
-    let sum = 0
-    for (const match of matches) {
-        sum += (match.score - meanScore) ** 2
-    }
-
-    const minScore = Math.sqrt((1 / (matches.length - 1) * sum))
-    matches = matches.filter((match) => match.score >= minScore)
-
-    let maxScore = 0
+    let maxRelevancyScore = 0
     let maxAuthorityScore = 0
     for (const match of matches) {
-        if (match.score > maxScore) { maxScore = match.score }
+        if (match.relevancyScore > maxRelevancyScore) { maxRelevancyScore = match.relevancyScore }
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
     }
 
+    for (const match of matches) {
+        match.score = computeScore(match, maxRelevancyScore, maxAuthorityScore)
+    }
+
     matches = matches.sort((a, b) => {
-        const aNormalizedScore = a.score / maxScore + 1
-        const bNormalizedScore = b.score / maxScore + 1
-
-        const aNormalizedAuthorityScore = a.authorityScore / maxAuthorityScore + 1
-        const bNormalizedAuthorityScore = b.authorityScore / maxAuthorityScore + 1
-
-        const aCombinedScore = (Math.log2(aNormalizedScore) * 2) + (Math.log2(aNormalizedAuthorityScore) * 2)
-        const bCombinedScore = (Math.log2(bNormalizedScore) * 2) + (Math.log2(bNormalizedAuthorityScore) * 2)
-
-        if (aCombinedScore < bCombinedScore) {
+        if (a.score < b.score) {
             return 1
         }
-        if (aCombinedScore > bCombinedScore) {
+        if (a.score > b.score) {
             return -1
         }
 
@@ -236,11 +241,12 @@ class DocumentEntry {
 }
 
 class Match {
-    constructor(docID, score, initialTerms) {
+    constructor(docID, relevancyScore, initialTerms) {
         this._id = docID
-        this.score = score
+        this.relevancyScore = relevancyScore
         this.terms = new Set(initialTerms)
 
+        this.score = 0.0
         this.authorityScore = 1.0
         this.hubScore = 1.0
         this.incomingNeighbors = new Set()
@@ -426,7 +432,7 @@ class FTSIndex {
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
 
-                let termScore = 0
+                let termRelevancyScore = 0
                 for (const [fieldName, field] of this.fields.entries()) {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
@@ -437,17 +443,17 @@ class FTSIndex {
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
-                    termScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
+                    termRelevancyScore += dirichletPlus(termWeight, termFrequencyInDoc, termProbability, docEntry.len,
                         originalTerms.size) * field.weight * field.lengthWeight *
                         this.documentWeights.get(docID)
                 }
 
                 const match = matchSet.get(docID)
                 if (match) {
-                    match.score += termScore
+                    match.relevancyScore += termRelevancyScore
                     match.terms.add(term)
                 } else {
-                    matchSet.set(docID, new Match(docID, termScore, [term]))
+                    matchSet.set(docID, new Match(docID, termRelevancyScore, [term]))
                 }
             }
         }
@@ -470,10 +476,10 @@ class FTSIndex {
         }
 
         results = results.sort((a, b) => {
-            if (a.score < b.score) {
+            if (a.relevancyScore < b.relevancyScore) {
                 return 1
             }
-            if (a.score > b.score) {
+            if (a.relevancyScore > b.relevancyScore) {
                 return -1
             }
 
