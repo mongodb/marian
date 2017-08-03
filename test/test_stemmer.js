@@ -2,7 +2,9 @@
 'use strict'
 
 const assert = require('assert')
-const {tokenize} = require('../src/fts/Stemmer.js')
+const fs = require('fs')
+const promisify = require('util').promisify
+const {tokenize, stem} = require('../src/fts/Stemmer.js')
 
 describe('Stemmer', () => {
     describe('#tokenize', () => {
@@ -22,6 +24,20 @@ describe('Stemmer', () => {
 
         it('should skip single-character tokens', () => {
             assert.deepStrictEqual(tokenize('a fox\'s brush'), ['fox', 'brush'])
+        })
+
+        it('should pass the porter2 test vector', async function() {
+            this.slow(250)
+
+            const text = await promisify(fs.readFile)('test/stemmed-corpus.txt', {encoding: 'utf-8'})
+            const lines = text.split('\n')
+            for (let line of lines) {
+                line = line.trim()
+                if (!line) { continue }
+                const [word, correctStemmed] = line.split(/\s+/, 2)
+                const stemmed = stem(word)
+                assert.strictEqual(stemmed, correctStemmed)
+            }
         })
     })
 })
