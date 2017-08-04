@@ -4,13 +4,21 @@ const Query = require('./Query.js').Query
 const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
+const MAX_MATCHES = 100
+
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
     const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
     return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
 }
 
-function filterByRelevancySigma(matches, sigma) {
+/**
+ * We want to penalize the final score of any matches that are in the bottom
+ * standard deviation of relevancy. Return that minimum relevancy score.
+ * @param {[Match]} matches The matches over which to compute a relevancy threshold.
+ * @return {number} The relevancy threshold.
+ */
+function computeRelevancyThreshold(matches) {
     let meanScore = 0
     for (const match of matches) {
         meanScore += match.relevancyScore
@@ -22,8 +30,11 @@ function filterByRelevancySigma(matches, sigma) {
         sum += (match.relevancyScore - meanScore) ** 2
     }
 
-    const minScore = Math.sqrt((1 / (matches.length - 1) * sum)) * sigma
-    return matches.filter((match) => match.relevancyScore >= minScore)
+    return Math.sqrt((1 / (matches.length - 1) * sum))
+}
+
+function capLength(array, maxLength) {
+    return array.length > maxLength ? array.slice(0, maxLength) : array
 }
 
 function hits(matches, converganceThreshold, maxIterations) {
@@ -71,7 +82,7 @@ function hits(matches, converganceThreshold, maxIterations) {
         lastHubNorm = hubNorm
     }
 
-    matches = filterByRelevancySigma(matches, 1)
+    matches = capLength(matches, MAX_MATCHES)
 
     let maxRelevancyScore = 0
     let maxAuthorityScore = 0
@@ -80,8 +91,15 @@ function hits(matches, converganceThreshold, maxIterations) {
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
     }
 
+    // Compute the final ranking score
+    const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
         match.score = computeScore(match, maxRelevancyScore, maxAuthorityScore)
+
+        // Penalize anything with especially poor relevancy
+        if (match.relevancyScore < relevancyScoreThreshold) {
+            match.score -= 1
+        }
     }
 
     matches = matches.sort((a, b) => {
@@ -404,7 +422,7 @@ class FTSIndex {
         })
 
         if (!useHits) {
-            return filterByRelevancySigma(rootSet, 1)
+            return capLength(rootSet, MAX_MATCHES)
         }
 
         // Expand our root set's neighbors to create a base set: the set of all
