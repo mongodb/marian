@@ -83,25 +83,30 @@ function hits(matches, scoringFunction, converganceThreshold, maxIterations) {
         lastHubNorm = hubNorm
     }
 
-    matches = capLength(matches, MAX_MATCHES)
+    // Cut anything with zero relevancy
+    matches = matches.filter((match) => match.relevancyScore > 0)
 
+    // Compute statistics for score normalization
     let maxRelevancyScore = 0
     let maxAuthorityScore = 0
     let maxHubScore = 0
+    const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
+        // Ignore anything with bad relevancy for the purposes of score normalization
+        if (match.relevancyScore < relevancyScoreThreshold) { continue }
+
         if (match.relevancyScore > maxRelevancyScore) { maxRelevancyScore = match.relevancyScore }
         if (match.authorityScore > maxAuthorityScore) { maxAuthorityScore = match.authorityScore }
         if (match.hubScore > maxHubScore) { maxHubScore = match.hubScore }
     }
 
     // Compute the final ranking score
-    const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
         match.score = scoringFunction(match, maxRelevancyScore, maxAuthorityScore, maxHubScore)
 
         // Penalize anything with especially poor relevancy
         if (match.relevancyScore < relevancyScoreThreshold) {
-            match.score -= 1
+            match.score -= 100
         }
     }
 
@@ -116,7 +121,7 @@ function hits(matches, scoringFunction, converganceThreshold, maxIterations) {
         return 0
     })
 
-    return matches
+    return capLength(matches, MAX_MATCHES)
 }
 
 /* Yuanhua Lv and ChengXiang Zhai. 2011. Lower-bounding term frequency
