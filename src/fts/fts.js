@@ -6,6 +6,16 @@ const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
 const MAX_MATCHES = 100
 
+/**
+ * Normalize URLs by chopping off trailing index.html components.
+ * standard deviation of relevancy. Return that minimum relevancy score.
+ * @param {String} url The input URL.
+ * @return {String} The normalized URL.
+ */
+function normalizeURL(url) {
+    return url.replace(/\/index.html$/, '/')
+}
+
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
     const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
@@ -278,8 +288,11 @@ class FTSIndex {
 
     add(document, onToken) {
         if (document.links !== undefined && document.url !== undefined) {
+            document.url = normalizeURL(document.url)
+
             this.linkGraph.set(document.url, document.links || [])
-            for (const href of document.links || []) {
+            for (let href of document.links || []) {
+                href = normalizeURL(href)
                 let incomingLinks = this.inverseLinkGraph.get(href)
                 if (!incomingLinks) {
                     incomingLinks = []
