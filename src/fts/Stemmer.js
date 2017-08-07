@@ -55,6 +55,7 @@ const stopWords = new Set([
     'however',
     'i',
     'if',
+    'important',
     'into',
     'is',
     'it',
