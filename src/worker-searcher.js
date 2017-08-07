@@ -90,7 +90,8 @@ function sync(manifests) {
     const newIndex = new fts.FTSIndex({
         text: 1,
         headings: 3,
-        title: 10
+        title: 10,
+        tags: 20,
     })
 
     for (const [term, [synonymn, weight]] of correlations) {
@@ -111,6 +112,7 @@ function sync(manifests) {
 
                 weight: weight,
                 text: doc.text,
+                tags: doc.tags,
                 headings: (doc.headings || []).join(' '),
                 title: doc.title}, (word) => words.add(word))
 
