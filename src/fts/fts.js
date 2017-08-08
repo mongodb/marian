@@ -391,7 +391,7 @@ class FTSIndex {
 
                     const termWeight = stemmedTerms.get(term) || 0.1
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
-                    const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / field.totalTokensSeen
+                    const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / Math.max(field.totalTokensSeen, 500)
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
