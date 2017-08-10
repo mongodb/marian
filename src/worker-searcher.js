@@ -89,7 +89,7 @@ function setupSpellingDictionary(words) {
 function sync(manifests) {
     const newIndex = new fts.FTSIndex({
         text: 1,
-        headings: 3,
+        headings: 5,
         title: 10,
         tags: 75,
     })
