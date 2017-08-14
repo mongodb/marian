@@ -450,7 +450,7 @@ class FTSIndex {
 
         // Expand our root set's neighbors to create a base set: the set of all
         // relevant pages, as well as pages that link TO or are linked FROM those pages.
-        const baseSet = new Map(rootSet.map((match) => [match._id, match]))
+        let baseSet = new Map(rootSet.map((match) => [match._id, match]))
         for (const match of Array.from(baseSet.values())) {
             const url = this.idToUrl.get(match._id)
             for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
@@ -482,8 +482,14 @@ class FTSIndex {
             }
         }
 
+        baseSet = Array.from(baseSet.values())
+        for (const match of baseSet) {
+            match.incomingNeighbors = Array.from(match.incomingNeighbors)
+            match.outgoingNeighbors = Array.from(match.outgoingNeighbors)
+        }
+
         // Run HITS to re-sort our results based on authority
-        return hits(Array.from(baseSet.values()), 0.00001, 200)
+        return hits(baseSet, 0.00001, 200)
     }
 }
 
