@@ -120,7 +120,17 @@ const stopWords = new Set([
     'you',
     'your'])
 
+const wordCache = new Map()
 const stemmer = new Porter2()
+function stem(word) {
+    let stemmed = wordCache.get(word)
+    if (!stemmed) {
+        stemmed = stemmer.stemWord(word)
+        wordCache.set(word, stemmed)
+    }
+
+    return stemmed
+}
 
 function isStopWord(word) {
     return stopWords.has(word)
@@ -132,6 +142,6 @@ function tokenize(text) {
         filter((token) => token.length > 1)
 }
 
-exports.stem = stemmer.stemWord.bind(stemmer)
+exports.stem = stem
 exports.isStopWord = isStopWord
 exports.tokenize = tokenize

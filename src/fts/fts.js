@@ -165,10 +165,9 @@ class TermEntry {
         this.timesAppeared = new Map()
     }
 
-    register(fieldName, docID, tokenID) {
+    register(fieldName, docID) {
         this.docs.push(docID)
         this.timesAppeared.set(fieldName, (this.timesAppeared.get(fieldName) || 0) + 1)
-        this.addTokenPosition(docID, tokenID)
     }
 
     addTokenPosition(docID, tokenID) {
@@ -313,37 +312,43 @@ class FTSIndex {
             if (!text) { continue }
             let tokens = tokenize(text)
             for (const token of tokens) { onToken(token) }
-            tokens = tokens.filter((word) => !isStopWord(word)).map((token) => stem(token))
-            const len = tokens.length
-            field.totalTokensSeen += tokens.length
+            tokens = tokens.filter((word) => !isStopWord(word))
+            let numberOfTokens = 0
 
-            for (const token of tokens) {
-                if (onToken) { onToken(token) }
+            for (let token of tokens) {
+                if (isStopWord(token)) { continue }
 
+                token = stem(token)
+                onToken(token)
+
+                numberOfTokens += 1
                 this.termID += 1
 
                 let indexEntry = this.terms.get(token)
                 if (!indexEntry) {
-                    this.terms.set(token, new TermEntry())
-                    indexEntry = this.terms.get(token)
+                    indexEntry = new TermEntry()
+                    this.terms.set(token, indexEntry)
                 }
 
                 const count = termFrequencies.get(token) || 0
                 termFrequencies.set(token, count + 1)
+
                 if (count === 0) {
                     this.trie.insert(token, document._id)
-                    indexEntry.register(fieldName, document._id, this.termID)
-                } else {
-                    indexEntry.addTokenPosition(document._id, this.termID)
+                    indexEntry.register(fieldName, document._id)
                 }
+
+                indexEntry.addTokenPosition(document._id, this.termID)
             }
 
             // After each field, bump by one to prevent accidental adjacency.
             this.termID += 1
 
-            this.fields.get(fieldName).documents.set(document._id, new DocumentEntry(len, termFrequencies))
-            this.documentWeights.set(document._id, document.weight || 1)
+            field.totalTokensSeen += numberOfTokens
+            this.fields.get(fieldName).documents.set(document._id, new DocumentEntry(numberOfTokens, termFrequencies))
         }
+
+        this.documentWeights.set(document._id, document.weight || 1)
     }
 
     collectMatchesFromTrie(terms) {
