@@ -451,7 +451,7 @@ class FTSIndex {
         // Expand our root set's neighbors to create a base set: the set of all
         // relevant pages, as well as pages that link TO or are linked FROM those pages.
         let baseSet = new Map(rootSet.map((match) => [match._id, match]))
-        for (const match of Array.from(baseSet.values())) {
+        for (const match of rootSet) {
             const url = this.idToUrl.get(match._id)
             for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
                 if (_id === null || _id === undefined) {
