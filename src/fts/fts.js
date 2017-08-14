@@ -458,10 +458,13 @@ class FTSIndex {
                     continue
                 }
 
-                match.outgoingNeighbors.add(_id)
+                let neighbor = baseSet.get(_id)
+                if (!neighbor) {
+                    neighbor = new Match(_id, 0, [])
+                    baseSet.set(_id, neighbor)
+                }
 
-                if (baseSet.has(_id)) { continue }
-                baseSet.set(_id, new Match(_id, 0, []))
+                match.outgoingNeighbors.add(neighbor)
             }
 
             for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
@@ -469,16 +472,14 @@ class FTSIndex {
                     continue
                 }
 
-                match.incomingNeighbors.add(_id)
+                let neighbor = baseSet.get(_id)
+                if (!neighbor) {
+                    neighbor = new Match(_id, 0, [])
+                    baseSet.set(_id, neighbor)
+                }
 
-                if (baseSet.has(_id)) { continue }
-                baseSet.set(_id, new Match(_id, 0, []))
+                match.incomingNeighbors.add(neighbor)
             }
-        }
-
-        for (const match of baseSet.values()) {
-            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
-            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
         }
 
         // Run HITS to re-sort our results based on authority
