@@ -100,13 +100,10 @@ function sync(manifests) {
 
     const words = new Set()
     const newDocuments = Object.create(null)
-    let id = 0
     for (const manifest of manifests) {
         for (const doc of manifest.documents) {
             const weight = doc.weight || 1
-            newIndex.add({
-                _id: id,
-
+            const id = newIndex.add({
                 links: doc.links,
                 url: doc.url,
 
@@ -123,8 +120,6 @@ function sync(manifests) {
                 searchProperty: manifest.searchProperty,
                 includeInGlobalSearch: manifest.includeInGlobalSearch
             }
-
-            id += 1
         }
     }
 

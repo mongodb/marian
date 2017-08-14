@@ -100,6 +100,8 @@ function hits(matches, converganceThreshold, maxIterations) {
     let maxAuthorityScore = 0
     const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
+        if (isNaN(match.authorityScore)) { match.authorityScore = 1 / 1e10 }
+
         // Ignore anything with bad relevancy for the purposes of score normalization
         if (match.relevancyScore < relevancyScoreThreshold) { continue }
 
@@ -192,13 +194,13 @@ class Match {
     constructor(docID, relevancyScore, initialTerms) {
         this._id = docID
         this.relevancyScore = relevancyScore
-        this.terms = new Set(initialTerms)
+        this.terms = initialTerms
 
         this.score = 0.0
         this.authorityScore = 1.0
         this.hubScore = 1.0
-        this.incomingNeighbors = new Set()
-        this.outgoingNeighbors = new Set()
+        this.incomingNeighbors = []
+        this.outgoingNeighbors = []
     }
 }
 
@@ -237,6 +239,7 @@ class FTSIndex {
 
         this.trie = new Trie()
         this.terms = new Map()
+        this.docID = 0
         this.termID = 0
         this.documentWeights = new Map()
 
@@ -244,6 +247,9 @@ class FTSIndex {
         this.inverseLinkGraph = new Map()
         this.urlToId = new Map()
         this.idToUrl = new Map()
+
+        this.incomingNeighbors = []
+        this.outgoingNeighbors = []
 
         this.wordCorrelations = new Map()
     }
@@ -286,6 +292,8 @@ class FTSIndex {
     }
 
     add(document, onToken) {
+        document._id = this.docID
+
         if (document.links !== undefined && document.url !== undefined) {
             document.url = normalizeURL(document.url)
 
@@ -349,6 +357,66 @@ class FTSIndex {
         }
 
         this.documentWeights.set(document._id, document.weight || 1)
+        this.docID += 1
+
+        return document._id
+    }
+
+    getNeighbors(baseSet, match) {
+        const url = this.idToUrl.get(match._id)
+        const links = this.linkGraph.get(url) || []
+
+        let incomingNeighbors = this.incomingNeighbors[match._id]
+        let outgoingNeighbors = this.outgoingNeighbors[match._id]
+
+        if (!incomingNeighbors) {
+            const incomingNeighborsSet = new Set()
+            for (const ancestorURL of this.inverseLinkGraph.get(url) || []) {
+                const ancestorID = this.urlToId.get(ancestorURL)
+                if (ancestorID === undefined) { continue }
+
+                if (ancestorID) {
+                    incomingNeighborsSet.add(ancestorID)
+                }
+            }
+
+            incomingNeighbors = Array.from(incomingNeighborsSet)
+            this.incomingNeighbors[match._id] = incomingNeighbors
+        }
+
+        if (!outgoingNeighbors) {
+            const outgoingNeighborsSet = new Set()
+            for (const link of links) {
+                const descendentID = this.urlToId.get(link)
+                if (descendentID === undefined) { continue }
+
+                if (descendentID) {
+                    outgoingNeighborsSet.add(descendentID)
+                }
+            }
+
+            outgoingNeighbors = Array.from(outgoingNeighborsSet)
+            this.outgoingNeighbors[match._id] = outgoingNeighbors
+        }
+
+        for (const neighborID of incomingNeighbors) {
+            let newMatch = baseSet.get(neighborID)
+            if (!newMatch) {
+                newMatch = new Match(neighborID, 0, null)
+                baseSet.set(neighborID, newMatch)
+            }
+            match.incomingNeighbors.push(newMatch)
+        }
+
+        for (const neighborID of outgoingNeighbors) {
+            let newMatch = baseSet.get(neighborID)
+            if (!newMatch) {
+                newMatch = new Match(neighborID, 0, null)
+                baseSet.set(neighborID, newMatch)
+            }
+
+            match.outgoingNeighbors.push(newMatch)
+        }
     }
 
     collectMatchesFromTrie(terms) {
@@ -410,7 +478,7 @@ class FTSIndex {
                     match.relevancyScore += termRelevancyScore
                     match.terms.add(term)
                 } else {
-                    matchSet.set(docID, new Match(docID, termRelevancyScore, [term]))
+                    matchSet.set(docID, new Match(docID, termRelevancyScore, new Set([term])))
                 }
             }
         }
@@ -433,18 +501,18 @@ class FTSIndex {
             })
         }
 
-        rootSet = rootSet.sort((a, b) => {
-            if (a.relevancyScore < b.relevancyScore) {
-                return 1
-            }
-            if (a.relevancyScore > b.relevancyScore) {
-                return -1
-            }
-
-            return 0
-        })
-
         if (!useHits) {
+            rootSet = rootSet.sort((a, b) => {
+                if (a.relevancyScore < b.relevancyScore) {
+                    return 1
+                }
+                if (a.relevancyScore > b.relevancyScore) {
+                    return -1
+                }
+
+                return 0
+            })
+
             return capLength(rootSet, MAX_MATCHES)
         }
 
@@ -452,44 +520,11 @@ class FTSIndex {
         // relevant pages, as well as pages that link TO or are linked FROM those pages.
         let baseSet = new Map(rootSet.map((match) => [match._id, match]))
         for (const match of rootSet) {
-            const url = this.idToUrl.get(match._id)
-            for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
-                if (_id === null || _id === undefined) {
-                    continue
-                }
-
-                let neighbor = baseSet.get(_id)
-                if (!neighbor) {
-                    neighbor = new Match(_id, 0, [])
-                    baseSet.set(_id, neighbor)
-                }
-
-                match.outgoingNeighbors.add(neighbor)
-            }
-
-            for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
-                if (_id === null || _id === undefined) {
-                    continue
-                }
-
-                let neighbor = baseSet.get(_id)
-                if (!neighbor) {
-                    neighbor = new Match(_id, 0, [])
-                    baseSet.set(_id, neighbor)
-                }
-
-                match.incomingNeighbors.add(neighbor)
-            }
-        }
-
-        baseSet = Array.from(baseSet.values())
-        for (const match of baseSet) {
-            match.incomingNeighbors = Array.from(match.incomingNeighbors)
-            match.outgoingNeighbors = Array.from(match.outgoingNeighbors)
+            this.getNeighbors(baseSet, match)
         }
 
         // Run HITS to re-sort our results based on authority
-        return hits(baseSet, 0.00001, 200)
+        return hits(Array.from(baseSet.values()), 0.00001, 200)
     }
 }
 
