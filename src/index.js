@@ -140,7 +140,7 @@ class TaskWorker {
 class Index {
     constructor(manifestSource) {
         this.manifestSource = manifestSource
-        this.manifestSyncDates = new Map()
+        this.manifests = []
         this.errors = []
 
         this.lastSyncDate = null
@@ -155,7 +155,7 @@ class Index {
 
     getStatus() {
         return {
-            manifests: Array.from(this.manifestSyncDates.keys()),
+            manifests: this.manifests,
             lastSync: {
                 errors: this.errors,
                 finished: this.lastSyncDate ? this.lastSyncDate.toISOString() : null
@@ -208,7 +208,7 @@ class Index {
             })
 
             manifests.push({
-                body: JSON.parse(data.Body),
+                body: data.Body.toString('utf-8'),
                 lastModified: data.LastModified,
                 searchProperty: searchProperty
             })
@@ -228,7 +228,7 @@ class Index {
                 const searchProperty = matches[1]
 
                 manifests.push({
-                    body: JSON.parse(fs.readFileSync(path, {encoding: 'utf-8'})),
+                    body: fs.readFileSync(path, {encoding: 'utf-8'}),
                     lastModified: stats.mtime,
                     searchProperty: searchProperty
                 })
@@ -260,24 +260,7 @@ class Index {
             throw new Error('Unknown manifest source protocol')
         }
 
-        manifests = manifests.map((manifest) => {
-            const documents = []
-            for (const doc of manifest.body.documents) {
-                manifest.url = manifest.body.url.replace(/\/+$/, '')
-                doc.slug = doc.slug.replace(/^\/+/, '')
-                doc.url = `${manifest.body.url}/${doc.slug}`
-                documents.push(doc)
-            }
-
-            this.manifestSyncDates.set(manifest.searchProperty, manifest.lastModified)
-
-            return {
-                documents: documents,
-                searchProperty: manifest.searchProperty,
-                includeInGlobalSearch: manifest.body.includeInGlobalSearch
-            }
-        })
-
+        this.manifests = manifests.map((manifest) => manifest.searchProperty)
         this.lastSyncDate = new Date()
         // This date will be used to compare against incoming request HTTP dates,
         // which truncate the milliseconds.

@@ -98,6 +98,24 @@ function sync(manifests) {
         newIndex.correlateWord(term, synonymn, weight)
     }
 
+    manifests = manifests.map((manifest) => {
+        manifest.body = JSON.parse(manifest.body)
+        const url = manifest.body.url.replace(/\/+$/, '')
+
+        manifest.body.documents = manifest.body.documents.map((doc) => {
+            doc.slug = doc.slug.replace(/^\/+/, '')
+            doc.url = `${url}/${doc.slug}`
+
+            return doc
+        })
+
+        return {
+            documents: manifest.body.documents,
+            searchProperty: manifest.searchProperty,
+            includeInGlobalSearch: manifest.body.includeInGlobalSearch
+        }
+    })
+
     const words = new Set()
     const newDocuments = Object.create(null)
     for (const manifest of manifests) {
