@@ -318,16 +318,15 @@ class FTSIndex {
 
             const text = document[fieldName]
             if (!text) { continue }
-            let tokens = tokenize(text)
-            for (const token of tokens) { onToken(token) }
-            tokens = tokens.filter((word) => !isStopWord(word))
+
+            const tokens = tokenize(text)
             let numberOfTokens = 0
 
             for (let token of tokens) {
-                if (isStopWord(token)) { continue }
-
-                token = stem(token)
                 onToken(token)
+
+                if (isStopWord(token)) { continue }
+                token = stem(token)
 
                 numberOfTokens += 1
                 this.termID += 1
