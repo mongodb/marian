@@ -144,6 +144,7 @@ class Index {
         this.errors = []
 
         this.lastSyncDate = null
+        this.currentlyIndexing = false
 
         this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
 
@@ -237,9 +238,7 @@ class Index {
             })})
     }
 
-    async load() {
-        this.errors = []
-
+    async getManifests() {
         const parsedSource = this.manifestSource.match(/((?:bucket)|(?:dir)):(.+)/)
         if (!parsedSource) {
             throw new Error('Bad manifest source')
@@ -260,22 +259,43 @@ class Index {
             throw new Error('Unknown manifest source protocol')
         }
 
-        this.manifests = manifests.map((manifest) => manifest.searchProperty)
-        this.lastSyncDate = new Date()
-        // This date will be used to compare against incoming request HTTP dates,
-        // which truncate the milliseconds.
-        this.lastSyncDate.setMilliseconds(0)
+        return manifests
+    }
 
-        for (const worker of this.workers.pool) {
-            this.workers.suspend(worker)
-            try {
-                await worker.send({sync: manifests})
-            } finally {
-                this.workers.resume(worker)
-            }
+    async load() {
+        if (this.currentlyIndexing) {
+            throw new Error('already-indexing')
+        }
+        this.currentlyIndexing = true
+
+        let manifests
+        try {
+            manifests = await this.getManifests()
+        } catch (err) {
+            this.currentlyIndexing = false
+            throw err
         }
 
-        log.info('Loaded new index')
+        this.errors = []
+        setTimeout(async () => {
+            for (const worker of this.workers.pool) {
+                this.workers.suspend(worker)
+                try {
+                    await worker.send({sync: manifests})
+                } finally {
+                    this.workers.resume(worker)
+                }
+            }
+
+            this.currentlyIndexing = false
+            this.manifests = manifests.map((manifest) => manifest.searchProperty)
+            this.lastSyncDate = new Date()
+            // This date will be used to compare against incoming request HTTP dates,
+            // which truncate the milliseconds.
+            this.lastSyncDate.setMilliseconds(0)
+
+            log.info('Loaded new index')
+        }, 1)
     }
 }
 
@@ -284,7 +304,9 @@ class Marian {
         this.index = new Index(bucket)
 
         // Fire-and-forget loading
-        this.index.load()
+        this.index.load().catch((err) => {
+            this.errors.push(err)
+        })
     }
 
     start(port) {
@@ -335,7 +357,12 @@ class Marian {
         } catch(err) {
             headers['Content-Type'] = 'application/json'
             const body = await compress(req, headers, JSON.stringify({'errors': [err]}))
-            res.writeHead(500, headers)
+
+            if (err.message === 'already-indexing') {
+                res.writeHead(503, headers)
+            } else {
+                res.writeHead(500, headers)
+            }
             res.end(body)
             return
         }
