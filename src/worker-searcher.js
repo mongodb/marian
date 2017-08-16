@@ -12,6 +12,7 @@ const correlations = require(pathModule.join(__dirname, './src/correlations.js')
 const MAXIMUM_TERMS = 10
 
 let spelling = null
+let searchPropertyAliases = new Map()
 let index = null
 let documents = {}
 
@@ -26,6 +27,14 @@ function search(queryString, searchProperties, useHits) {
     if (!index) {
         throw new Error('still-indexing')
     }
+
+    searchProperties = searchProperties.map((property) => {
+        if (searchPropertyAliases.has(property)) {
+            return searchPropertyAliases.get(property)
+        }
+
+        return property
+    })
 
     const parsedQuery = new Query(queryString)
     if (parsedQuery.terms.size > MAXIMUM_TERMS) {
@@ -87,6 +96,7 @@ function setupSpellingDictionary(words) {
 }
 
 function sync(manifests) {
+    const newSearchPropertyAliases = new Map()
     const newIndex = new fts.FTSIndex({
         text: 1,
         headings: 5,
@@ -101,6 +111,10 @@ function sync(manifests) {
     manifests = manifests.map((manifest) => {
         manifest.body = JSON.parse(manifest.body)
         const url = manifest.body.url.replace(/\/+$/, '')
+
+        for (const alias of (manifest.body.aliases || [])) {
+            newSearchPropertyAliases.set(alias, manifest.searchProperty)
+        }
 
         manifest.body.documents = manifest.body.documents.map((doc) => {
             doc.slug = doc.slug.replace(/^\/+/, '')
@@ -143,6 +157,7 @@ function sync(manifests) {
 
     setupSpellingDictionary(words)
     index = newIndex
+    searchPropertyAliases = newSearchPropertyAliases
     documents = newDocuments
 }
 
@@ -153,6 +168,7 @@ self.onmessage = function(event) {
     try {
         if (message.search !== undefined) {
             const properties = (message.search.searchProperty || '').split(',').filter((x) => x)
+
             const results = search(message.search.queryString, properties, message.search.useHits)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {

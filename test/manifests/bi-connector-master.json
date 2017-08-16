@@ -1,5 +1,6 @@
 {
     "includeInGlobalSearch": true,
+    "aliases": ["bi-connector-alias"],
     "documents": [
         {
             "slug": "index.html",
