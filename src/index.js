@@ -285,14 +285,16 @@ class Index {
                 } finally {
                     this.workers.resume(worker)
                 }
+
+                // Ideally we would have a lastSyncDate per worker.
+                this.lastSyncDate = new Date()
+                // This date will be used to compare against incoming request HTTP dates,
+                // which truncate the milliseconds.
+                this.lastSyncDate.setMilliseconds(0)
             }
 
             this.currentlyIndexing = false
             this.manifests = manifests.map((manifest) => manifest.searchProperty)
-            this.lastSyncDate = new Date()
-            // This date will be used to compare against incoming request HTTP dates,
-            // which truncate the milliseconds.
-            this.lastSyncDate.setMilliseconds(0)
 
             log.info('Loaded new index')
         }, 1)
