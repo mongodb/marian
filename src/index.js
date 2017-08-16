@@ -146,7 +146,7 @@ class Index {
         this.lastSyncDate = null
         this.currentlyIndexing = false
 
-        this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
+        this.workers = new Pool(Math.min(os.cpus().length, 2), () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
 
         // Suspend all of our workers until we have an index
         for (const worker of this.workers.pool) {
