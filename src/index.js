@@ -307,13 +307,16 @@ class Marian {
         this.index = new Index(bucket)
 
         this.queryLoggingClient = null
-        const queryLoggingClient = new stitch.StitchClient(loggingConfig.serviceName)
-        queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey).then(() => {
-            log.info('Signed into logging service')
-            this.queryLoggingClient = queryLoggingClient
-        }).catch((err) => {
-            log.error(`Failed to login to query logging database: ${err}`)
-        })
+
+        if (loggingConfig) {
+            const queryLoggingClient = new stitch.StitchClient(loggingConfig.serviceName)
+            queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey).then(() => {
+                log.info('Signed into logging service')
+                this.queryLoggingClient = queryLoggingClient
+            }).catch((err) => {
+                log.error(`Failed to login to query logging database: ${err}`)
+            })
+        }
 
         // Fire-and-forget loading
         this.index.load().catch((err) => {
@@ -481,13 +484,17 @@ class Marian {
 async function main() {
     Logger.setLevel('info', true)
 
-    const loggingConfig = {}
+    let loggingConfig = null
     const loggingConfigComponents = (process.env.LOGGING_CONFIG || ':').split(':')
     if (loggingConfigComponents.length != 2) {
         throw new Error(`Invalid LOGGING_CONFIG: "${process.env.LOGGING_CONFIG}"`)
     }
-    loggingConfig.serviceName = loggingConfigComponents[0]
-    loggingConfig.apiKey = loggingConfigComponents[1]
+
+    if (loggingConfigComponents[0]) {
+        loggingConfig = {}
+        loggingConfig.serviceName = loggingConfigComponents[0]
+        loggingConfig.apiKey = loggingConfigComponents[1]
+    }
 
     const server = new Marian(process.argv[2], loggingConfig)
     server.start(8000)
