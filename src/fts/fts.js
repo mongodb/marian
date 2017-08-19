@@ -326,7 +326,11 @@ class FTSIndex {
                 onToken(token)
 
                 if (isStopWord(token)) { continue }
-                token = stem(token)
+                if (token.startsWith('$')) {
+                    this.correlateWord(token.slice(1), token, 0.75)
+                } else {
+                    token = stem(token)
+                }
 
                 numberOfTokens += 1
                 this.termID += 1
