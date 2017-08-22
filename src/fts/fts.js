@@ -114,8 +114,8 @@ function hits(matches, converganceThreshold, maxIterations) {
         match.score = computeScore(match, maxRelevancyScore, maxAuthorityScore)
 
         // Penalize anything with especially poor relevancy
-        if (match.relevancyScore < relevancyScoreThreshold) {
-            match.score -= 100
+        if (match.relevancyScore < relevancyScoreThreshold * 2) {
+            match.score -= (relevancyScoreThreshold / match.relevancyScore)
         }
     }
 
