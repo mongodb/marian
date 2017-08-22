@@ -125,9 +125,19 @@ const stopWords = new Set([
     'you',
     'your'])
 
+const atomicPhraseMap = {
+    'ops': 'manager',
+    'cloud': 'manager'
+}
+const atomicPhrases = new Set(Object.entries(atomicPhraseMap).map((kv) => kv.join(' ')))
+
 const wordCache = new Map()
 const stemmer = new Porter2()
 function stem(word) {
+    if (atomicPhrases.has(word)) {
+        return word
+    }
+
     let stemmed = wordCache.get(word)
     if (!stemmed) {
         stemmed = stemmer.stemWord(word)
@@ -142,9 +152,23 @@ function isStopWord(word) {
 }
 
 function tokenize(text) {
-    return text.split(/[^\w$]+/).
-        map((token) => token.toLocaleLowerCase()).
-        filter((token) => token.length > 1)
+    const components = text.split(/[^\w$]+/)
+    const tokens = []
+    for (let i = 0; i < components.length; i += 1) {
+        const token = components[i].toLocaleLowerCase()
+        const nextToken = components[i + 1]
+        if (nextToken !== undefined && atomicPhraseMap[token] === nextToken.toLocaleLowerCase()) {
+            i += 1
+            tokens.push(`${token} ${atomicPhraseMap[token]}`)
+            continue
+        }
+
+        if (token.length > 1) {
+            tokens.push(token)
+        }
+    }
+
+    return tokens
 }
 
 exports.stem = stem

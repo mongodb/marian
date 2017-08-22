@@ -63,7 +63,7 @@ function search(queryString, searchProperties, useHits) {
 
     rawResults = rawResults.map((match) => {
         const doc = documents[match._id]
-        // console.log(doc.title, match.score, match.authorityScore, match.hubScore)
+        // console.log(doc.title, match.score, match.relevancyScore, match.authorityScore)
         return {
             title: doc.title,
             preview: doc.preview,

@@ -18,6 +18,13 @@ describe('Stemmer', () => {
                 ['db', 'scores', 'find', 'results', '$elemmatch', '$gte', '80', '$lt', '85'])
         })
 
+        it('should tokenize atomic phrases', () => {
+            assert.deepStrictEqual(
+                tokenize('ops manager configuration'),
+                ['ops manager', 'configuration'])
+            assert.strictEqual(stem('ops manager'), 'ops manager')
+        })
+
         it('should pass the porter2 test vector', async function() {
             this.slow(250)
 

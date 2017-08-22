@@ -1,5 +1,5 @@
 'use strict'
-const {isStopWord, stem} = require('./Stemmer.js')
+const {isStopWord, tokenize, stem} = require('./Stemmer.js')
 
 /**
  * Return true if there is a configuration of numbers in the tree that
@@ -46,7 +46,7 @@ function haveContiguousKeywords(phraseComponents, keywords) {
 }
 
 function processPart(part) {
-    return part.toLowerCase().split(/\W+/).filter((s) => s.length > 0)
+    return tokenize(part)
 }
 
 /** A parsed search query. */
