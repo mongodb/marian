@@ -19,7 +19,7 @@ function normalizeURL(url) {
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
     const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
-    return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+    return Math.log2(normalizedRelevancyScore) + Math.log2(normalizedAuthorityScore)
 }
 
 /**
@@ -100,7 +100,7 @@ function hits(matches, converganceThreshold, maxIterations) {
     let maxAuthorityScore = 0
     const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
-        if (isNaN(match.authorityScore)) { match.authorityScore = 1 / 1e10 }
+        if (isNaN(match.authorityScore)) { match.authorityScore = 1e-10 }
 
         // Ignore anything with bad relevancy for the purposes of score normalization
         if (match.relevancyScore < relevancyScoreThreshold) { continue }
