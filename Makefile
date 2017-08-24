@@ -10,11 +10,11 @@ all: lint test
 lint: node_modules/.CURRENT
 	${ESLINT} src/*.js src/fts/*.js test/*.js
 
-test: node_modules/.CURRENT
+test: node_modules/.CURRENT lint
 	${MOCHA} test/test_*.js
 
-integration: lint node_modules/.CURRENT
-	${MOCHA} --timeout 5000 test/*.js
+integration: test
+	${MOCHA} --timeout 5000 test/integration_test.js
 
 run:
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/

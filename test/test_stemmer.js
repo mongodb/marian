@@ -9,13 +9,13 @@ const {tokenize, stem} = require('../src/fts/Stemmer.js')
 describe('Stemmer', () => {
     describe('#tokenize', () => {
         it('should split on whitespace', () => {
-            assert.deepStrictEqual(tokenize('The qUick \tbrown\n\n\t fox'), ['the', 'quick', 'brown', 'fox'])
+            assert.deepStrictEqual(tokenize('The qUick \tbrown\n\n\t fox.'), ['the', 'quick', 'brown', 'fox'])
         })
 
         it('should handle code somewhat coherently', () => {
             assert.deepStrictEqual(
                 tokenize('db.scores.find(\n   { results: { $elemMatch: { $gte: 80, $lt: 85 } } }\n)'),
-                ['db', 'scores', 'find', 'results', '$elemmatch', '$gte', '80', '$lt', '85'])
+                ['db.scores.find', 'results', '$elemmatch', '$gte', '80', '$lt', '85'])
         })
 
         it('should tokenize atomic phrases', () => {

@@ -123,7 +123,9 @@ const stopWords = new Set([
     'would',
     'yet',
     'you',
-    'your'])
+    'your',
+    'i.e.',
+    'e.g.'])
 
 const atomicPhraseMap = {
     'ops': 'manager',
@@ -152,12 +154,15 @@ function isStopWord(word) {
 }
 
 function tokenize(text) {
-    const components = text.split(/[^\w$]+/)
+    const components = text.split(/[^\w$.]+/).map((token) => {
+        return token.toLocaleLowerCase().replace(/(?:^\.)|(?:\.$)/g, '')
+    })
+
     const tokens = []
     for (let i = 0; i < components.length; i += 1) {
-        const token = components[i].toLocaleLowerCase()
+        const token = components[i]
         const nextToken = components[i + 1]
-        if (nextToken !== undefined && atomicPhraseMap[token] === nextToken.toLocaleLowerCase()) {
+        if (nextToken !== undefined && atomicPhraseMap[token] === nextToken) {
             i += 1
             tokens.push(`${token} ${atomicPhraseMap[token]}`)
             continue

@@ -4,7 +4,7 @@ const Query = require('./Query.js').Query
 const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
-const MAX_MATCHES = 100
+const MAX_MATCHES = 150
 
 /**
  * Normalize URLs by chopping off trailing index.html components.

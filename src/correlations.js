@@ -11,5 +11,6 @@ exports.correlations = new Map([
     ['aggregation', ['pipeline', 0.1]],
     ['least', ['min', 0.6]],
     ['set security', ['keyfile', 1.0]],
-    ['cluster security', ['keyfile', 1.0]]
+    ['cluster security', ['keyfile', 1.0]],
+    ['x509', ['x.509', 1.0]]
 ])
