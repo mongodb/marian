@@ -289,9 +289,6 @@ class Index {
 
                 // Ideally we would have a lastSyncDate per worker.
                 this.lastSyncDate = new Date()
-                // This date will be used to compare against incoming request HTTP dates,
-                // which truncate the milliseconds.
-                this.lastSyncDate.setMilliseconds(0)
             }
 
             this.currentlyIndexing = false
@@ -424,8 +421,12 @@ class Marian {
         }
 
         if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
+            const lastSyncDateNoMilliseconds = new Date(this.index.lastSyncDate)
+            // HTTP dates truncate the milliseconds.
+            lastSyncDateNoMilliseconds.setMilliseconds(0)
+
             const ifModifiedSince = new Date(req.headers['if-modified-since'])
-            if (ifModifiedSince >= this.index.lastSyncDate) {
+            if (ifModifiedSince >= lastSyncDateNoMilliseconds) {
                 res.writeHead(304, headers)
                 res.end('')
                 return
