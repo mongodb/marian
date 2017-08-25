@@ -25,9 +25,8 @@ const MAXIMUM_QUERY_LENGTH = 100
 
 // If a worker's backlog rises above this threshold, reject the request.
 // This prevents the server from getting bogged down for unbounded periods of time.
-const MAXIMUM_BACKLOG = 10
-const WARNING_BACKLOG = 8
-const SLOW_BACKLOG = 5
+const MAXIMUM_BACKLOG = 20
+const WARNING_BACKLOG = 15
 
 const log = new Logger({
     showTimestamp: true,
@@ -169,7 +168,7 @@ class Index {
 
     search(queryString, searchProperty) {
         const worker = this.workers.get()
-        const useHits = worker.backlog <= SLOW_BACKLOG
+        const useHits = worker.backlog <= WARNING_BACKLOG
 
         return worker.send({search: {
             queryString: queryString,
