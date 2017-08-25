@@ -3,7 +3,7 @@ NODE ?= $(shell which node)
 MOCHA ?= ./node_modules/.bin/mocha
 ESLINT ?= ./node_modules/.bin/eslint
 
-.PHONY: all lint test integration run
+.PHONY: all lint test integration regression run
 
 all: lint test
 
@@ -15,6 +15,9 @@ test: node_modules/.CURRENT lint
 
 integration: test
 	${MOCHA} --timeout 5000 test/integration_test.js
+
+regression: integration
+	${MOCHA} --timeout 200000 test/regression_test.js
 
 run:
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/
