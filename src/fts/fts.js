@@ -256,7 +256,7 @@ class FTSIndex {
 
     // word can be multiple tokens. synonym must be a single token.
     correlateWord(word, synonym, closeness) {
-        word = tokenize(word).map((w) => stem(w)).join(' ')
+        word = tokenize(word, false).map((w) => stem(w)).join(' ')
         synonym = stem(synonym)
 
         const correlationEntry = this.wordCorrelations.get(word)
@@ -319,7 +319,7 @@ class FTSIndex {
             const text = document[fieldName]
             if (!text) { continue }
 
-            const tokens = tokenize(text)
+            const tokens = tokenize(text, true)
             let numberOfTokens = 0
 
             for (let token of tokens) {

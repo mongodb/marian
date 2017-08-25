@@ -153,7 +153,7 @@ function isStopWord(word) {
     return stopWords.has(word)
 }
 
-function tokenize(text) {
+function tokenize(text, fuzzy) {
     const components = text.split(/[^\w$.]+/).map((token) => {
         return token.toLocaleLowerCase().replace(/(?:^\.)|(?:\.$)/g, '')
     })
@@ -170,6 +170,14 @@ function tokenize(text) {
 
         if (token.length > 1) {
             tokens.push(token)
+        }
+
+        if (fuzzy) {
+            for (const subtoken of token.split('.')) {
+                if (subtoken.length > 1) {
+                    tokens.push(subtoken)
+                }
+            }
         }
     }
 

@@ -46,7 +46,7 @@ function haveContiguousKeywords(phraseComponents, keywords) {
 }
 
 function processPart(part) {
-    return tokenize(part)
+    return tokenize(part, false)
 }
 
 /** A parsed search query. */
