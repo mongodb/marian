@@ -4,18 +4,21 @@ MOCHA ?= ./node_modules/.bin/mocha
 ESLINT ?= ./node_modules/.bin/eslint
 BROWSERIFY ?= ./node_modules/.bin/browserify
 
-.PHONY: all lint test integration run demo
+.PHONY: all lint test integration regression run demo
 
 all: lint test
 
 lint: node_modules/.CURRENT
 	${ESLINT} src/*.js src/fts/*.js src/demo/*.js test/*.js
 
-test: node_modules/.CURRENT
+test: node_modules/.CURRENT lint
 	${MOCHA} test/test_*.js
 
-integration: lint node_modules/.CURRENT
-	${MOCHA} --timeout 5000 test/*.js
+integration: test
+	${MOCHA} --timeout 5000 test/integration_test.js
+
+regression: integration
+	MAX_WORKERS=1 ${MOCHA} --timeout 200000 test/regression_test.js
 
 run:
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/

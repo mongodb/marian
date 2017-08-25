@@ -25,8 +25,9 @@ describe('Query', () => {
 
     it('should handle adjacent phrases', () => {
         const query = (new Query('"introduce the" "officially supported"'))
-        assert.deepStrictEqual(query.terms, new Set(['introduce', 'officially', 'supported']))
+        assert.deepStrictEqual(query.terms, new Set(['introduce', 'the', 'officially', 'supported']))
         assert.deepStrictEqual(query.phrases, ['introduce the', 'officially supported'])
+        assert.deepStrictEqual(query.stemmedPhrases, [['introduc'], ['offici', 'support']])
     })
 
     it('should handle a phrase fragment as a single phrase', () => {

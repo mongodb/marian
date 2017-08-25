@@ -20,6 +20,8 @@ const stopWords = new Set([
     'am',
     'among',
     'an',
+    'and',
+    'any',
     'are',
     'as',
     'at',
@@ -55,6 +57,8 @@ const stopWords = new Set([
     'however',
     'i',
     'if',
+    'important',
+    'in',
     'into',
     'is',
     'it',
@@ -74,6 +78,7 @@ const stopWords = new Set([
     'often',
     'on',
     'only',
+    'or',
     'other',
     'our',
     'own',
@@ -107,6 +112,7 @@ const stopWords = new Set([
     'were',
     'what',
     'when',
+    'where',
     'which',
     'while',
     'who',
@@ -117,20 +123,67 @@ const stopWords = new Set([
     'would',
     'yet',
     'you',
-    'your'])
+    'your',
+    'i.e.',
+    'e.g.'])
 
+const atomicPhraseMap = {
+    'ops': 'manager',
+    'cloud': 'manager'
+}
+const atomicPhrases = new Set(Object.entries(atomicPhraseMap).map((kv) => kv.join(' ')))
+
+const wordCache = new Map()
 const stemmer = new Porter2()
+function stem(word) {
+    if (atomicPhrases.has(word)) {
+        return word
+    }
+
+    let stemmed = wordCache.get(word)
+    if (!stemmed) {
+        stemmed = stemmer.stemWord(word)
+        wordCache.set(word, stemmed)
+    }
+
+    return stemmed
+}
 
 function isStopWord(word) {
     return stopWords.has(word)
 }
 
-function tokenize(text) {
-    return text.split(/[^\w]+/).
-        map((token) => token.toLocaleLowerCase().trim()).
-        filter((token) => token.length > 1)
+function tokenize(text, fuzzy) {
+    const components = text.split(/[^\w$.]+/).map((token) => {
+        return token.toLocaleLowerCase().replace(/(?:^\.)|(?:\.$)/g, '')
+    })
+
+    const tokens = []
+    for (let i = 0; i < components.length; i += 1) {
+        const token = components[i]
+        const nextToken = components[i + 1]
+        if (nextToken !== undefined && atomicPhraseMap[token] === nextToken) {
+            i += 1
+            tokens.push(`${token} ${atomicPhraseMap[token]}`)
+            continue
+        }
+
+        if (token.length > 1) {
+            tokens.push(token)
+        }
+
+        if (fuzzy) {
+            for (const subtoken of token.split('.')) {
+                if (subtoken.length > 1) {
+                    tokens.push(subtoken)
+                }
+            }
+        }
+    }
+
+    return tokens
 }
 
-exports.stem = stemmer.stemWord.bind(stemmer)
+exports.stem = stem
 exports.isStopWord = isStopWord
 exports.tokenize = tokenize

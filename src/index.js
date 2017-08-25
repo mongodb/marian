@@ -16,6 +16,7 @@ const dive = require('dive')
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
+const stitch = require('mongodb-stitch')
 const Worker = require('tiny-worker')
 
 process.title = 'marian'
@@ -24,9 +25,8 @@ const MAXIMUM_QUERY_LENGTH = 100
 
 // If a worker's backlog rises above this threshold, reject the request.
 // This prevents the server from getting bogged down for unbounded periods of time.
-const MAXIMUM_BACKLOG = 10
-const WARNING_BACKLOG = 8
-const SLOW_BACKLOG = 5
+const MAXIMUM_BACKLOG = 20
+const WARNING_BACKLOG = 15
 
 const log = new Logger({
     showTimestamp: true,
@@ -140,12 +140,14 @@ class TaskWorker {
 class Index {
     constructor(manifestSource) {
         this.manifestSource = manifestSource
-        this.manifestSyncDates = new Map()
+        this.manifests = []
         this.errors = []
 
         this.lastSyncDate = null
+        this.currentlyIndexing = false
 
-        this.workers = new Pool(os.cpus().length, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
+        const MAX_WORKERS = parseInt(process.env.MAX_WORKERS) || 2
+        this.workers = new Pool(Math.min(os.cpus().length, MAX_WORKERS), () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
 
         // Suspend all of our workers until we have an index
         for (const worker of this.workers.pool) {
@@ -155,7 +157,7 @@ class Index {
 
     getStatus() {
         return {
-            manifests: Array.from(this.manifestSyncDates.keys()),
+            manifests: this.manifests,
             lastSync: {
                 errors: this.errors,
                 finished: this.lastSyncDate ? this.lastSyncDate.toISOString() : null
@@ -166,7 +168,7 @@ class Index {
 
     search(queryString, searchProperty) {
         const worker = this.workers.get()
-        const useHits = worker.backlog <= SLOW_BACKLOG
+        const useHits = worker.backlog <= WARNING_BACKLOG
 
         return worker.send({search: {
             queryString: queryString,
@@ -208,7 +210,7 @@ class Index {
             })
 
             manifests.push({
-                body: JSON.parse(data.Body),
+                body: data.Body.toString('utf-8'),
                 lastModified: data.LastModified,
                 searchProperty: searchProperty
             })
@@ -228,7 +230,7 @@ class Index {
                 const searchProperty = matches[1]
 
                 manifests.push({
-                    body: JSON.parse(fs.readFileSync(path, {encoding: 'utf-8'})),
+                    body: fs.readFileSync(path, {encoding: 'utf-8'}),
                     lastModified: stats.mtime,
                     searchProperty: searchProperty
                 })
@@ -237,9 +239,7 @@ class Index {
             })})
     }
 
-    async load() {
-        this.errors = []
-
+    async getManifests() {
         const parsedSource = this.manifestSource.match(/((?:bucket)|(?:dir)):(.+)/)
         if (!parsedSource) {
             throw new Error('Bad manifest source')
@@ -260,48 +260,65 @@ class Index {
             throw new Error('Unknown manifest source protocol')
         }
 
-        manifests = manifests.map((manifest) => {
-            const documents = []
-            for (const doc of manifest.body.documents) {
-                manifest.url = manifest.body.url.replace(/\/+$/, '')
-                doc.slug = doc.slug.replace(/^\/+/, '')
-                doc.url = `${manifest.body.url}/${doc.slug}`
-                documents.push(doc)
-            }
+        return manifests
+    }
 
-            this.manifestSyncDates.set(manifest.searchProperty, manifest.lastModified)
+    async load() {
+        if (this.currentlyIndexing) {
+            throw new Error('already-indexing')
+        }
+        this.currentlyIndexing = true
 
-            return {
-                documents: documents,
-                searchProperty: manifest.searchProperty,
-                includeInGlobalSearch: manifest.body.includeInGlobalSearch
-            }
-        })
-
-        this.lastSyncDate = new Date()
-        // This date will be used to compare against incoming request HTTP dates,
-        // which truncate the milliseconds.
-        this.lastSyncDate.setMilliseconds(0)
-
-        for (const worker of this.workers.pool) {
-            this.workers.suspend(worker)
-            try {
-                await worker.send({sync: manifests})
-            } finally {
-                this.workers.resume(worker)
-            }
+        let manifests
+        try {
+            manifests = await this.getManifests()
+        } catch (err) {
+            this.currentlyIndexing = false
+            throw err
         }
 
-        log.info('Loaded new index')
+        this.errors = []
+        setTimeout(async () => {
+            for (const worker of this.workers.pool) {
+                this.workers.suspend(worker)
+                try {
+                    await worker.send({sync: manifests})
+                } finally {
+                    this.workers.resume(worker)
+                }
+
+                // Ideally we would have a lastSyncDate per worker.
+                this.lastSyncDate = new Date()
+            }
+
+            this.currentlyIndexing = false
+            this.manifests = manifests.map((manifest) => manifest.searchProperty)
+
+            log.info('Loaded new index')
+        }, 1)
     }
 }
 
 class Marian {
-    constructor(bucket) {
+    constructor(bucket, loggingConfig) {
         this.index = new Index(bucket)
 
+        this.queryLoggingClient = null
+
+        if (loggingConfig) {
+            const queryLoggingClient = new stitch.StitchClient(loggingConfig.serviceName)
+            queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey).then(() => {
+                log.info('Signed into logging service')
+                this.queryLoggingClient = queryLoggingClient
+            }).catch((err) => {
+                log.error(`Failed to login to query logging database: ${err}`)
+            })
+        }
+
         // Fire-and-forget loading
-        this.index.load()
+        this.index.load().catch((err) => {
+            this.errors.push(err)
+        })
     }
 
     start(port) {
@@ -352,7 +369,12 @@ class Marian {
         } catch(err) {
             headers['Content-Type'] = 'application/json'
             const body = await compress(req, headers, JSON.stringify({'errors': [err]}))
-            res.writeHead(500, headers)
+
+            if (err.message === 'already-indexing') {
+                res.writeHead(503, headers)
+            } else {
+                res.writeHead(500, headers)
+            }
             res.end(body)
             return
         }
@@ -399,8 +421,12 @@ class Marian {
         }
 
         if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
+            const lastSyncDateNoMilliseconds = new Date(this.index.lastSyncDate)
+            // HTTP dates truncate the milliseconds.
+            lastSyncDateNoMilliseconds.setMilliseconds(0)
+
             const ifModifiedSince = new Date(req.headers['if-modified-since'])
-            if (ifModifiedSince >= this.index.lastSyncDate) {
+            if (ifModifiedSince >= lastSyncDateNoMilliseconds) {
                 res.writeHead(304, headers)
                 res.end('')
                 return
@@ -444,12 +470,34 @@ class Marian {
         responseBody = await compress(req, headers, responseBody)
         res.writeHead(200, headers)
         res.end(responseBody)
+
+        // Now that we've responded, try to log the search query
+        if (this.queryLoggingClient) {
+            this.queryLoggingClient.executeNamedPipeline('query', {
+                'query': parsedUrl.query.q
+            }).catch((err) => {
+                log.error(`Failed to log query: ${err}`)
+            })
+        }
     }
 }
 
 async function main() {
     Logger.setLevel('info', true)
-    const server = new Marian(process.argv[2])
+
+    let loggingConfig = null
+    const loggingConfigComponents = (process.env.LOGGING_CONFIG || ':').split(':')
+    if (loggingConfigComponents.length != 2) {
+        throw new Error(`Invalid LOGGING_CONFIG: "${process.env.LOGGING_CONFIG}"`)
+    }
+
+    if (loggingConfigComponents[0]) {
+        loggingConfig = {}
+        loggingConfig.serviceName = loggingConfigComponents[0]
+        loggingConfig.apiKey = loggingConfigComponents[1]
+    }
+
+    const server = new Marian(process.argv[2], loggingConfig)
     server.start(8000)
 }
 

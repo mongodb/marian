@@ -4,12 +4,22 @@ const Query = require('./Query.js').Query
 const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
-const MAX_MATCHES = 100
+const MAX_MATCHES = 150
+
+/**
+ * Normalize URLs by chopping off trailing index.html components.
+ * standard deviation of relevancy. Return that minimum relevancy score.
+ * @param {String} url The input URL.
+ * @return {String} The normalized URL.
+ */
+function normalizeURL(url) {
+    return url.replace(/\/index.html$/, '/')
+}
 
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
     const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
-    return (Math.log2(normalizedRelevancyScore) * 2) + (Math.log2(normalizedAuthorityScore) * 2)
+    return Math.log2(normalizedRelevancyScore) + Math.log2(normalizedAuthorityScore)
 }
 
 /**
@@ -92,6 +102,8 @@ function hits(matches, scoringFunction, converganceThreshold, maxIterations) {
     let maxHubScore = 0
     const relevancyScoreThreshold = computeRelevancyThreshold(matches)
     for (const match of matches) {
+        if (isNaN(match.authorityScore)) { match.authorityScore = 1e-10 }
+
         // Ignore anything with bad relevancy for the purposes of score normalization
         if (match.relevancyScore < relevancyScoreThreshold) { continue }
 
@@ -105,8 +117,8 @@ function hits(matches, scoringFunction, converganceThreshold, maxIterations) {
         match.score = scoringFunction(match, maxRelevancyScore, maxAuthorityScore, maxHubScore)
 
         // Penalize anything with especially poor relevancy
-        if (match.relevancyScore < relevancyScoreThreshold) {
-            match.score -= 100
+        if (match.relevancyScore < relevancyScoreThreshold * 2) {
+            match.score -= (relevancyScoreThreshold / match.relevancyScore)
         }
     }
 
@@ -152,10 +164,9 @@ class TermEntry {
         this.timesAppeared = new Map()
     }
 
-    register(fieldName, docID, tokenID) {
+    register(fieldName, docID) {
         this.docs.push(docID)
         this.timesAppeared.set(fieldName, (this.timesAppeared.get(fieldName) || 0) + 1)
-        this.addTokenPosition(docID, tokenID)
     }
 
     addTokenPosition(docID, tokenID) {
@@ -180,13 +191,13 @@ class Match {
     constructor(docID, relevancyScore, initialTerms) {
         this._id = docID
         this.relevancyScore = relevancyScore
-        this.terms = new Set(initialTerms)
+        this.terms = initialTerms
 
         this.score = 0.0
         this.authorityScore = 1.0
         this.hubScore = 1.0
-        this.incomingNeighbors = new Set()
-        this.outgoingNeighbors = new Set()
+        this.incomingNeighbors = []
+        this.outgoingNeighbors = []
     }
 }
 
@@ -225,6 +236,7 @@ class FTSIndex {
 
         this.trie = new Trie()
         this.terms = new Map()
+        this.docID = 0
         this.termID = 0
         this.documentWeights = new Map()
 
@@ -233,12 +245,15 @@ class FTSIndex {
         this.urlToId = new Map()
         this.idToUrl = new Map()
 
+        this.incomingNeighbors = []
+        this.outgoingNeighbors = []
+
         this.wordCorrelations = new Map()
     }
 
     // word can be multiple tokens. synonym must be a single token.
     correlateWord(word, synonym, closeness) {
-        word = tokenize(word).map((w) => stem(w)).join(' ')
+        word = tokenize(word, false).map((w) => stem(w)).join(' ')
         synonym = stem(synonym)
 
         const correlationEntry = this.wordCorrelations.get(word)
@@ -274,9 +289,14 @@ class FTSIndex {
     }
 
     add(document, onToken) {
+        document._id = this.docID
+
         if (document.links !== undefined && document.url !== undefined) {
+            document.url = normalizeURL(document.url)
+
             this.linkGraph.set(document.url, document.links || [])
-            for (const href of document.links || []) {
+            for (let href of document.links || []) {
+                href = normalizeURL(href)
                 let incomingLinks = this.inverseLinkGraph.get(href)
                 if (!incomingLinks) {
                     incomingLinks = []
@@ -295,38 +315,107 @@ class FTSIndex {
 
             const text = document[fieldName]
             if (!text) { continue }
-            let tokens = tokenize(text)
-            for (const token of tokens) { onToken(token) }
-            tokens = tokens.filter((word) => !isStopWord(word)).map((token) => stem(token))
-            const len = tokens.length
-            field.totalTokensSeen += tokens.length
 
-            for (const token of tokens) {
+            const tokens = tokenize(text, true)
+            let numberOfTokens = 0
+
+            for (let token of tokens) {
                 onToken(token)
 
+                if (isStopWord(token)) { continue }
+                if (token.startsWith('$')) {
+                    this.correlateWord(token.slice(1), token, 0.75)
+                } else {
+                    token = stem(token)
+                }
+
+                numberOfTokens += 1
                 this.termID += 1
 
                 let indexEntry = this.terms.get(token)
                 if (!indexEntry) {
-                    this.terms.set(token, new TermEntry())
-                    indexEntry = this.terms.get(token)
+                    indexEntry = new TermEntry()
+                    this.terms.set(token, indexEntry)
                 }
 
                 const count = termFrequencies.get(token) || 0
                 termFrequencies.set(token, count + 1)
+
                 if (count === 0) {
                     this.trie.insert(token, document._id)
-                    indexEntry.register(fieldName, document._id, this.termID)
-                } else {
-                    indexEntry.addTokenPosition(document._id, this.termID)
+                    indexEntry.register(fieldName, document._id)
                 }
+
+                indexEntry.addTokenPosition(document._id, this.termID)
             }
 
             // After each field, bump by one to prevent accidental adjacency.
             this.termID += 1
 
-            this.fields.get(fieldName).documents.set(document._id, new DocumentEntry(len, termFrequencies))
-            this.documentWeights.set(document._id, document.weight || 1)
+            field.totalTokensSeen += numberOfTokens
+            this.fields.get(fieldName).documents.set(document._id, new DocumentEntry(numberOfTokens, termFrequencies))
+        }
+
+        this.documentWeights.set(document._id, document.weight || 1)
+        this.docID += 1
+
+        return document._id
+    }
+
+    getNeighbors(baseSet, match) {
+        const url = this.idToUrl.get(match._id)
+        const links = this.linkGraph.get(url) || []
+
+        let incomingNeighbors = this.incomingNeighbors[match._id]
+        let outgoingNeighbors = this.outgoingNeighbors[match._id]
+
+        if (!incomingNeighbors) {
+            const incomingNeighborsSet = new Set()
+            for (const ancestorURL of this.inverseLinkGraph.get(url) || []) {
+                const ancestorID = this.urlToId.get(ancestorURL)
+                if (ancestorID === undefined) { continue }
+
+                if (ancestorID) {
+                    incomingNeighborsSet.add(ancestorID)
+                }
+            }
+
+            incomingNeighbors = Array.from(incomingNeighborsSet)
+            this.incomingNeighbors[match._id] = incomingNeighbors
+        }
+
+        if (!outgoingNeighbors) {
+            const outgoingNeighborsSet = new Set()
+            for (const link of links) {
+                const descendentID = this.urlToId.get(link)
+                if (descendentID === undefined) { continue }
+
+                if (descendentID) {
+                    outgoingNeighborsSet.add(descendentID)
+                }
+            }
+
+            outgoingNeighbors = Array.from(outgoingNeighborsSet)
+            this.outgoingNeighbors[match._id] = outgoingNeighbors
+        }
+
+        for (const neighborID of incomingNeighbors) {
+            let newMatch = baseSet.get(neighborID)
+            if (!newMatch) {
+                newMatch = new Match(neighborID, 0, null)
+                baseSet.set(neighborID, newMatch)
+            }
+            match.incomingNeighbors.push(newMatch)
+        }
+
+        for (const neighborID of outgoingNeighbors) {
+            let newMatch = baseSet.get(neighborID)
+            if (!newMatch) {
+                newMatch = new Match(neighborID, 0, null)
+                baseSet.set(neighborID, newMatch)
+            }
+
+            match.outgoingNeighbors.push(newMatch)
         }
     }
 
@@ -387,7 +476,7 @@ class FTSIndex {
 
                     const termWeight = stemmedTerms.get(term) || 0.1
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
-                    const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / field.totalTokensSeen
+                    const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / Math.max(field.totalTokensSeen, 500)
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
@@ -401,7 +490,7 @@ class FTSIndex {
                     match.relevancyScore += termRelevancyScore
                     match.terms.add(term)
                 } else {
-                    matchSet.set(docID, new Match(docID, termRelevancyScore, [term]))
+                    matchSet.set(docID, new Match(docID, termRelevancyScore, new Set([term])))
                 }
             }
         }
@@ -424,52 +513,26 @@ class FTSIndex {
             })
         }
 
-        rootSet = rootSet.sort((a, b) => {
-            if (a.relevancyScore < b.relevancyScore) {
-                return 1
-            }
-            if (a.relevancyScore > b.relevancyScore) {
-                return -1
-            }
-
-            return 0
-        })
-
         if (!options.useHits) {
+            rootSet = rootSet.sort((a, b) => {
+                if (a.relevancyScore < b.relevancyScore) {
+                    return 1
+                }
+                if (a.relevancyScore > b.relevancyScore) {
+                    return -1
+                }
+
+                return 0
+            })
+
             return capLength(rootSet, MAX_MATCHES)
         }
 
         // Expand our root set's neighbors to create a base set: the set of all
         // relevant pages, as well as pages that link TO or are linked FROM those pages.
-        const baseSet = new Map(rootSet.map((match) => [match._id, match]))
-        for (const match of Array.from(baseSet.values())) {
-            const url = this.idToUrl.get(match._id)
-            for (const _id of (this.linkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
-                if (_id === null || _id === undefined) {
-                    continue
-                }
-
-                match.outgoingNeighbors.add(_id)
-
-                if (baseSet.has(_id)) { continue }
-                baseSet.set(_id, new Match(_id, 0, []))
-            }
-
-            for (const _id of (this.inverseLinkGraph.get(url) || []).map((url) => this.urlToId.get(url))) {
-                if (_id === null || _id === undefined) {
-                    continue
-                }
-
-                match.incomingNeighbors.add(_id)
-
-                if (baseSet.has(_id)) { continue }
-                baseSet.set(_id, new Match(_id, 0, []))
-            }
-        }
-
-        for (const match of baseSet.values()) {
-            match.outgoingNeighbors = new Set(Array.from(match.outgoingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
-            match.incomingNeighbors = new Set(Array.from(match.incomingNeighbors).map((_id) => baseSet.get(_id)).filter((match) => Boolean(match)))
+        let baseSet = new Map(rootSet.map((match) => [match._id, match]))
+        for (const match of rootSet) {
+            this.getNeighbors(baseSet, match)
         }
 
         // Run HITS to re-sort our results based on authority

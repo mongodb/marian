@@ -12,6 +12,7 @@ const correlations = require(pathModule.join(__dirname, './src/correlations.js')
 const MAXIMUM_TERMS = 10
 
 let spelling = null
+let searchPropertyAliases = new Map()
 let index = null
 let documents = {}
 
@@ -26,6 +27,14 @@ function search(queryString, searchProperties, useHits) {
     if (!index) {
         throw new Error('still-indexing')
     }
+
+    searchProperties = searchProperties.map((property) => {
+        if (searchPropertyAliases.has(property)) {
+            return searchPropertyAliases.get(property)
+        }
+
+        return property
+    })
 
     const parsedQuery = new Query(queryString)
     if (parsedQuery.terms.size > MAXIMUM_TERMS) {
@@ -54,7 +63,7 @@ function search(queryString, searchProperties, useHits) {
 
     rawResults = rawResults.map((match) => {
         const doc = documents[match._id]
-        // console.log(doc.title, match.score, match.authorityScore, match.hubScore)
+        // console.log(doc.title, match.score, match.relevancyScore, match.authorityScore)
         return {
             title: doc.title,
             preview: doc.preview,
@@ -87,30 +96,52 @@ function setupSpellingDictionary(words) {
 }
 
 function sync(manifests) {
+    const newSearchPropertyAliases = new Map()
     const newIndex = new fts.FTSIndex({
         text: 1,
-        headings: 3,
-        title: 10
+        headings: 5,
+        title: 10,
+        tags: 75,
     })
 
     for (const [term, [synonymn, weight]] of correlations) {
         newIndex.correlateWord(term, synonymn, weight)
     }
 
+    manifests = manifests.map((manifest) => {
+        manifest.body = JSON.parse(manifest.body)
+        const url = manifest.body.url.replace(/\/+$/, '')
+
+        for (const alias of (manifest.body.aliases || [])) {
+            newSearchPropertyAliases.set(alias, manifest.searchProperty)
+        }
+
+        manifest.body.documents = manifest.body.documents.map((doc) => {
+            doc.slug = doc.slug.replace(/^\/+/, '')
+            doc.url = `${url}/${doc.slug}`
+
+            return doc
+        })
+
+        return {
+            documents: manifest.body.documents,
+            searchProperty: manifest.searchProperty,
+            includeInGlobalSearch: manifest.body.includeInGlobalSearch
+        }
+    })
+
     const words = new Set()
     const newDocuments = Object.create(null)
-    let id = 0
     for (const manifest of manifests) {
         for (const doc of manifest.documents) {
             const weight = doc.weight || 1
-            newIndex.add({
-                _id: id,
-
+            const id = newIndex.add({
                 links: doc.links,
                 url: doc.url,
 
                 weight: weight,
                 text: doc.text,
+                tags: doc.tags,
                 headings: (doc.headings || []).join(' '),
                 title: doc.title}, (word) => words.add(word))
 
@@ -121,13 +152,12 @@ function sync(manifests) {
                 searchProperty: manifest.searchProperty,
                 includeInGlobalSearch: manifest.includeInGlobalSearch
             }
-
-            id += 1
         }
     }
 
     setupSpellingDictionary(words)
     index = newIndex
+    searchPropertyAliases = newSearchPropertyAliases
     documents = newDocuments
 }
 
@@ -138,6 +168,7 @@ self.onmessage = function(event) {
     try {
         if (message.search !== undefined) {
             const properties = (message.search.searchProperty || '').split(',').filter((x) => x)
+
             const results = search(message.search.queryString, properties, message.search.useHits)
             self.postMessage({results: results, messageId: messageId})
         } else if (message.sync !== undefined) {

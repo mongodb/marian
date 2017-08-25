@@ -13192,8 +13192,8 @@ imply                         impli
 implying                      impli
 impolitic                     impolit
 import                        import
-importance                    import
-important                     import
+importance                    important
+important                     important
 importation                   import
 imported                      import
 importer                      import
