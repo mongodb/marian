@@ -97,12 +97,12 @@ function setupSpellingDictionary(words) {
 
 function sync(manifests) {
     const newSearchPropertyAliases = new Map()
-    const newIndex = new fts.FTSIndex({
-        text: 1,
-        headings: 5,
-        title: 10,
-        tags: 75,
-    })
+    const newIndex = new fts.FTSIndex([
+        ['text', 1],
+        ['headings', 5],
+        ['title', 10],
+        ['tags', 75],
+    ])
 
     for (const [term, [synonymn, weight]] of correlations) {
         newIndex.correlateWord(term, synonymn, weight)
@@ -132,6 +132,7 @@ function sync(manifests) {
 
     const words = new Set()
     const newDocuments = Object.create(null)
+
     for (const manifest of manifests) {
         for (const doc of manifest.documents) {
             const weight = doc.weight || 1

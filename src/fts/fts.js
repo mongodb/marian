@@ -205,7 +205,8 @@ class Match {
 }
 
 class Field {
-    constructor(weight) {
+    constructor(name, weight) {
+        this.name = name
         this.documents = new Map()
         this.weight = weight
         this.totalTokensSeen = 0
@@ -232,11 +233,7 @@ class Field {
 
 class FTSIndex {
     constructor(fields) {
-        this.fields = new Map()
-        for (const field of Object.keys(fields)) {
-            this.fields.set(field, new Field(fields[field]))
-        }
-
+        this.fields = fields.map((field) => new Field(field[0], field[1]))
         this.trie = new Trie()
         this.terms = new Map()
         this.docID = 0
@@ -312,11 +309,11 @@ class FTSIndex {
             this.idToUrl.set(document._id, document.url)
         }
 
-        for (const [fieldName, field] of this.fields.entries()) {
+        for (const field of this.fields) {
             field._lengthWeight = null
             const termFrequencies = new Map()
 
-            const text = document[fieldName]
+            const text = document[field.name]
             if (!text) { continue }
 
             const tokens = tokenize(text, true)
@@ -346,7 +343,7 @@ class FTSIndex {
 
                 if (count === 0) {
                     this.trie.insert(token, document._id)
-                    indexEntry.register(fieldName, document._id)
+                    indexEntry.register(field.name, document._id)
                 }
 
                 indexEntry.addTokenPosition(document._id, this.termID)
@@ -356,7 +353,7 @@ class FTSIndex {
             this.termID += 1
 
             field.totalTokensSeen += numberOfTokens
-            this.fields.get(fieldName).documents.set(document._id, new DocumentEntry(numberOfTokens, termFrequencies))
+            field.documents.set(document._id, new DocumentEntry(numberOfTokens, termFrequencies))
         }
 
         this.documentWeights.set(document._id, document.weight || 1)
@@ -461,13 +458,13 @@ class FTSIndex {
                 const termEntry = this.terms.get(term)
 
                 let termRelevancyScore = 0
-                for (const [fieldName, field] of this.fields.entries()) {
+                for (const field of this.fields) {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
 
                     const termWeight = stemmedTerms.get(term) || 0.1
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
-                    const termProbability = (termEntry.timesAppeared.get(fieldName) || 0) / Math.max(field.totalTokensSeen, 500)
+                    const termProbability = (termEntry.timesAppeared.get(field.name) || 0) / Math.max(field.totalTokensSeen, 500)
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
