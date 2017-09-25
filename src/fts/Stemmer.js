@@ -111,7 +111,6 @@ const stopWords = new Set([
     'we',
     'were',
     'what',
-    'when',
     'where',
     'which',
     'while',
