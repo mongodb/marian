@@ -55,6 +55,7 @@ const stopWords = new Set([
     'how',
     'however',
     'i',
+    'i.e.',
     'if',
     'important',
     'in',
@@ -99,6 +100,7 @@ const stopWords = new Set([
     'there',
     'these',
     'they',
+    'this',
     'tis',
     'to',
     'too',
@@ -109,6 +111,7 @@ const stopWords = new Set([
     'we',
     'were',
     'what',
+    'when',
     'where',
     'which',
     'while',
@@ -121,7 +124,6 @@ const stopWords = new Set([
     'yet',
     'you',
     'your',
-    'i.e.',
     'e.g.'])
 
 const atomicPhraseMap = {
@@ -151,7 +153,7 @@ function isStopWord(word) {
 }
 
 function tokenize(text, fuzzy) {
-    const components = text.split(/[^\w$.]+/).map((token) => {
+    const components = text.split(/[^\w$%.]+/).map((token) => {
         return token.toLocaleLowerCase().replace(/(?:^\.)|(?:\.$)/g, '')
     })
 

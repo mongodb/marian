@@ -114,7 +114,7 @@ function hits(matches, converganceThreshold, maxIterations) {
         match.score = computeScore(match, maxRelevancyScore, maxAuthorityScore)
 
         // Penalize anything with especially poor relevancy
-        if (match.relevancyScore < relevancyScoreThreshold * 2) {
+        if (match.relevancyScore < relevancyScoreThreshold * 2.5) {
             match.score -= (relevancyScoreThreshold / match.relevancyScore)
         }
     }
@@ -323,8 +323,10 @@ class FTSIndex {
                 onToken(token)
 
                 if (isStopWord(token)) { continue }
-                if (token.startsWith('$')) {
-                    this.correlateWord(token.slice(1), token, 0.75)
+                if (token.startsWith('%%')) {
+                    this.correlateWord(token.slice(2), token, 0.9)
+                } else if (token.startsWith('$') || token.startsWith('%')) {
+                    this.correlateWord(token.slice(1), token, 0.9)
                 } else {
                     token = stem(token)
                 }
