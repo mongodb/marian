@@ -473,9 +473,7 @@ class Marian {
 
         // Now that we've responded, try to log the search query
         if (this.queryLoggingClient) {
-            this.queryLoggingClient.executeNamedPipeline('query', {
-                'query': parsedUrl.query.q
-            }).catch((err) => {
+            this.queryLoggingClient.executeFunction('docsSearchTerms', parsedUrl.query.q).catch((err) => {
                 log.error(`Failed to log query: ${err}`)
             })
         }
