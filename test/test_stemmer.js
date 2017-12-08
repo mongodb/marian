@@ -25,6 +25,16 @@ describe('Stemmer', () => {
             assert.strictEqual(stem('ops manager'), 'ops manager')
         })
 
+        it('should replace a standalone $ with "positional operator"', () => {
+            assert.deepStrictEqual(
+                tokenize('$ operator'),
+                ['positional', 'operator', 'operator'])
+
+            assert.deepStrictEqual(
+                tokenize('$max operator'),
+                ['$max', 'operator'])
+        })
+
         it('should pass the porter2 test vector', async function() {
             this.slow(250)
 

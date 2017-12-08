@@ -159,6 +159,13 @@ function tokenize(text, fuzzy) {
     const tokens = []
     for (let i = 0; i < components.length; i += 1) {
         const token = components[i]
+
+        if (token == '$') {
+            tokens.push('positional')
+            tokens.push('operator')
+            continue
+        }
+
         const nextToken = components[i + 1]
         if (nextToken !== undefined && atomicPhraseMap[token] === nextToken) {
             i += 1
