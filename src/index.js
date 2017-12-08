@@ -28,6 +28,10 @@ const MAXIMUM_QUERY_LENGTH = 100
 const MAXIMUM_BACKLOG = 20
 const WARNING_BACKLOG = 15
 
+const STANDARD_HEADERS = {
+    'X-Content-Type-Options': 'nosniff'
+}
+
 const log = new Logger({
     showTimestamp: true,
 })
@@ -363,6 +367,7 @@ class Marian {
         const headers = {
             'Vary': 'Accept-Encoding'
         }
+        Object.assign(headers, STANDARD_HEADERS)
 
         try {
             await this.index.load()
@@ -397,6 +402,7 @@ class Marian {
             'Vary': 'Accept-Encoding',
             'Pragma': 'no-cache'
         }
+        Object.assign(headers, STANDARD_HEADERS)
 
         const status = this.index.getStatus()
         let body = JSON.stringify(status)
@@ -419,6 +425,7 @@ class Marian {
             'Cache-Control': 'public,max-age=120,must-revalidate',
             'Access-Control-Allow-Origin': '*',
         }
+        Object.assign(headers, STANDARD_HEADERS)
 
         if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
             const lastSyncDateNoMilliseconds = new Date(this.index.lastSyncDate)
