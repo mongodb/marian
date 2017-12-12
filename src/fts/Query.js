@@ -95,14 +95,9 @@ class Query {
      */
     checkPhrases(tokens) {
         for (const phraseTokens of this.stemmedPhrases) {
-            let haveMatch = false
-
-            if (haveContiguousKeywords(phraseTokens, tokens)) {
-                haveMatch = true
-                break
+            if (!haveContiguousKeywords(phraseTokens, tokens)) {
+                return false
             }
-
-            if (!haveMatch) { return false }
         }
 
         return true

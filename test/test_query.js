@@ -46,10 +46,12 @@ describe('Query', () => {
         })
 
         it('should refuse phrases without adjacent words', () => {
-            const query = (new Query('"Quoth the raven"'))
+            const query = (new Query('"foo bar" "Quoth the raven"'))
             const tokenPositions = new Map([
                 ['quoth', [0, 3]],
-                ['raven', [2, 5]]])
+                ['raven', [2, 5]],
+                ['foo', [6]],
+                ['bar', [7]]])
             assert.ok(!query.checkPhrases(tokenPositions))
         })
     })
