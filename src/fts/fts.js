@@ -183,10 +183,9 @@ class TermEntry {
 }
 
 class DocumentEntry {
-    constructor(len, termFrequencies, weight) {
+    constructor(len, termFrequencies) {
         this.len = len
         this.termFrequencies = termFrequencies
-        this.weight = weight
     }
 }
 
