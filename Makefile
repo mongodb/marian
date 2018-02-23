@@ -10,7 +10,7 @@ all: lint test
 lint: node_modules/.CURRENT
 	${ESLINT} src/*.js src/fts/*.js test/*.js
 
-test: node_modules/.CURRENT lint
+test: node_modules/.CURRENT lint src/fts/Porter2.js
 	${MOCHA} test/test_*.js
 
 integration: test
@@ -19,8 +19,11 @@ integration: test
 regression: integration
 	MAX_WORKERS=1 ${MOCHA} --timeout 200000 test/regression_test.js
 
-run:
+run: src/fts/Porter2.js
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/
+
+snowball src/fts/Porter2.js: src/fts/Porter2.snowball
+	${NODE} tools/update_stemmer.js $^ src/fts/Porter2.js
 
 node_modules/.CURRENT: package.json
 	${NPM} -s install --build-from-source

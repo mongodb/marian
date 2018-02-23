@@ -21806,6 +21806,7 @@ retreating                    retreat
 retreats                      retreat
 retrenchment                  retrench
 retrenchments                 retrench
+retriable                     retriabl
 retribution                   retribut
 retributive                   retribut
 retrievable                   retriev
@@ -21817,6 +21818,7 @@ retrograding                  retrograd
 retrorsum                     retrorsum
 retrospect                    retrospect
 retrospective                 retrospect
+retryable                     retriabl
 return                        return
 returned                      return
 returning                     return

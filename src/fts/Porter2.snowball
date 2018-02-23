@@ -180,6 +180,7 @@ define exception1 as (
         'lying'     (<-'lie')
         'tying'     (<-'tie')
         'replica'   (<-'replic')
+        'retryable' (<- 'retriabl')
         'importance' (<-'important')
 
         /* special -LY cases */

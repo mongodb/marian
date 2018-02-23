@@ -145,22 +145,23 @@ class Porter2 {
             new Among("bias", -1, -1),
             new Among("cosmos", -1, -1),
             new Among("dying", -1, 3),
-            new Among("early", -1, 11),
-            new Among("gently", -1, 9),
+            new Among("early", -1, 12),
+            new Among("gently", -1, 10),
             new Among("howe", -1, -1),
-            new Among("idly", -1, 8),
-            new Among("importance", -1, 7),
+            new Among("idly", -1, 9),
+            new Among("importance", -1, 8),
             new Among("important", -1, -1),
             new Among("lying", -1, 4),
             new Among("news", -1, -1),
-            new Among("only", -1, 12),
+            new Among("only", -1, 13),
             new Among("replica", -1, 6),
-            new Among("singly", -1, 13),
+            new Among("retryable", -1, 7),
+            new Among("singly", -1, 14),
             new Among("skies", -1, 2),
             new Among("skis", -1, 1),
             new Among("sky", -1, -1),
             new Among("tying", -1, 5),
-            new Among("ugly", -1, 10)
+            new Among("ugly", -1, 11)
         ];
 
         this.g_v = [17, 65, 16, 1] ;
@@ -174,66 +175,66 @@ class Porter2 {
         this.I_p1 = 0;
     }
 
-    r_prelude ()
+    r_prelude () 
     {
-        // (, line 25
-        // unset Y_found, line 26
+        // (, line 28
+        // unset Y_found, line 29
         this.B_Y_found = false;
-        // do, line 27
+        // do, line 30
         var v_1 = this.cursor;
         var lab0 = true;
         lab0: while (lab0 == true)
         {
             lab0 = false;
-            // (, line 27
-            // [, line 27
+            // (, line 30
+            // [, line 30
             this.bra = this.cursor;
-            // literal, line 27
+            // literal, line 30
             if (!(this.eq_s("'")))
             {
                 break lab0;
             }
-            // ], line 27
+            // ], line 30
             this.ket = this.cursor;
-            // delete, line 27
+            // delete, line 30
             if (!this.slice_del())
             {
                 return false;
             }
         }
         this.cursor = v_1;
-        // do, line 28
+        // do, line 31
         var v_2 = this.cursor;
         var lab1 = true;
         lab1: while (lab1 == true)
         {
             lab1 = false;
-            // (, line 28
-            // [, line 28
+            // (, line 31
+            // [, line 31
             this.bra = this.cursor;
-            // literal, line 28
+            // literal, line 31
             if (!(this.eq_s("y")))
             {
                 break lab1;
             }
-            // ], line 28
+            // ], line 31
             this.ket = this.cursor;
-            // <-, line 28
+            // <-, line 31
             if (!this.slice_from("Y"))
             {
                 return false;
             }
-            // set Y_found, line 28
+            // set Y_found, line 31
             this.B_Y_found = true;
         }
         this.cursor = v_2;
-        // do, line 29
+        // do, line 32
         var v_3 = this.cursor;
         var lab2 = true;
         lab2: while (lab2 == true)
         {
             lab2 = false;
-            // repeat, line 29
+            // repeat, line 32
             replab3: while(true)
             {
                 var v_4 = this.cursor;
@@ -241,8 +242,8 @@ class Porter2 {
                 lab4: while (lab4 == true)
                 {
                     lab4 = false;
-                    // (, line 29
-                    // goto, line 29
+                    // (, line 32
+                    // goto, line 32
                     golab5: while(true)
                     {
                         var v_5 = this.cursor;
@@ -250,19 +251,19 @@ class Porter2 {
                         lab6: while (lab6 == true)
                         {
                             lab6 = false;
-                            // (, line 29
+                            // (, line 32
                             if (!(this.in_grouping(this.g_v, 97, 121)))
                             {
                                 break lab6;
                             }
-                            // [, line 29
+                            // [, line 32
                             this.bra = this.cursor;
-                            // literal, line 29
+                            // literal, line 32
                             if (!(this.eq_s("y")))
                             {
                                 break lab6;
                             }
-                            // ], line 29
+                            // ], line 32
                             this.ket = this.cursor;
                             this.cursor = v_5;
                             break golab5;
@@ -274,12 +275,12 @@ class Porter2 {
                         }
                         this.cursor++;
                     }
-                    // <-, line 29
+                    // <-, line 32
                     if (!this.slice_from("Y"))
                     {
                         return false;
                     }
-                    // set Y_found, line 29
+                    // set Y_found, line 32
                     this.B_Y_found = true;
                     continue replab3;
                 }
@@ -291,19 +292,19 @@ class Porter2 {
         return true;
     }
 
-    r_mark_regions ()
+    r_mark_regions () 
     {
-        // (, line 32
+        // (, line 35
         this.I_p1 = this.limit;
         this.I_p2 = this.limit;
-        // do, line 35
+        // do, line 38
         var v_1 = this.cursor;
         var lab0 = true;
         lab0: while (lab0 == true)
         {
             lab0 = false;
-            // (, line 35
-            // or, line 41
+            // (, line 38
+            // or, line 44
             var lab1 = true;
             lab1: while (lab1 == true)
             {
@@ -313,7 +314,7 @@ class Porter2 {
                 lab2: while (lab2 == true)
                 {
                     lab2 = false;
-                    // among, line 36
+                    // among, line 39
                     if (this.find_among(this.a_0) == 0)
                     {
                         break lab2;
@@ -321,8 +322,8 @@ class Porter2 {
                     break lab1;
                 }
                 this.cursor = v_2;
-                // (, line 41
-                // gopast, line 41
+                // (, line 44
+                // gopast, line 44
                 golab3: while(true)
                 {
                     var lab4 = true;
@@ -341,7 +342,7 @@ class Porter2 {
                     }
                     this.cursor++;
                 }
-                // gopast, line 41
+                // gopast, line 44
                 golab5: while(true)
                 {
                     var lab6 = true;
@@ -361,9 +362,9 @@ class Porter2 {
                     this.cursor++;
                 }
             }
-            // setmark p1, line 42
+            // setmark p1, line 45
             this.I_p1 = this.cursor;
-            // gopast, line 43
+            // gopast, line 46
             golab7: while(true)
             {
                 var lab8 = true;
@@ -382,7 +383,7 @@ class Porter2 {
                 }
                 this.cursor++;
             }
-            // gopast, line 43
+            // gopast, line 46
             golab9: while(true)
             {
                 var lab10 = true;
@@ -401,17 +402,17 @@ class Porter2 {
                 }
                 this.cursor++;
             }
-            // setmark p2, line 43
+            // setmark p2, line 46
             this.I_p2 = this.cursor;
         }
         this.cursor = v_1;
         return true;
     }
 
-    r_shortv ()
+    r_shortv () 
     {
-        // (, line 49
-        // or, line 51
+        // (, line 52
+        // or, line 54
         var lab0 = true;
         lab0: while (lab0 == true)
         {
@@ -421,7 +422,7 @@ class Porter2 {
             lab1: while (lab1 == true)
             {
                 lab1 = false;
-                // (, line 50
+                // (, line 53
                 if (!(this.out_grouping_b(this.g_v_WXY, 89, 121)))
                 {
                     break lab1;
@@ -437,7 +438,7 @@ class Porter2 {
                 break lab0;
             }
             this.cursor = this.limit - v_1;
-            // (, line 52
+            // (, line 55
             if (!(this.out_grouping_b(this.g_v, 97, 121)))
             {
                 return false;
@@ -446,7 +447,7 @@ class Porter2 {
             {
                 return false;
             }
-            // atlimit, line 52
+            // atlimit, line 55
             if (this.cursor > this.limit_backward)
             {
                 return false;
@@ -455,7 +456,7 @@ class Porter2 {
         return true;
     }
 
-    r_R1 ()
+    r_R1 () 
     {
         if (!(this.I_p1 <= this.cursor))
         {
@@ -464,7 +465,7 @@ class Porter2 {
         return true;
     }
 
-    r_R2 ()
+    r_R2 () 
     {
         if (!(this.I_p2 <= this.cursor))
         {
@@ -473,35 +474,35 @@ class Porter2 {
         return true;
     }
 
-    r_Step_1a ()
+    r_Step_1a () 
     {
         var among_var;
-        // (, line 58
-        // try, line 59
+        // (, line 61
+        // try, line 62
         var v_1 = this.limit - this.cursor;
         var lab0 = true;
         lab0: while (lab0 == true)
         {
             lab0 = false;
-            // (, line 59
-            // [, line 60
+            // (, line 62
+            // [, line 63
             this.ket = this.cursor;
-            // substring, line 60
+            // substring, line 63
             among_var = this.find_among_b(this.a_1);
             if (among_var == 0)
             {
                 this.cursor = this.limit - v_1;
                 break lab0;
             }
-            // ], line 60
+            // ], line 63
             this.bra = this.cursor;
             switch (among_var) {
                 case 0:
                     this.cursor = this.limit - v_1;
                     break lab0;
                 case 1:
-                    // (, line 62
-                    // delete, line 62
+                    // (, line 65
+                    // delete, line 65
                     if (!this.slice_del())
                     {
                         return false;
@@ -509,30 +510,30 @@ class Porter2 {
                     break;
             }
         }
-        // [, line 65
+        // [, line 68
         this.ket = this.cursor;
-        // substring, line 65
+        // substring, line 68
         among_var = this.find_among_b(this.a_2);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 65
+        // ], line 68
         this.bra = this.cursor;
         switch (among_var) {
             case 0:
                 return false;
             case 1:
-                // (, line 66
-                // <-, line 66
+                // (, line 69
+                // <-, line 69
                 if (!this.slice_from("ss"))
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 68
-                // or, line 68
+                // (, line 71
+                // or, line 71
                 var lab1 = true;
                 lab1: while (lab1 == true)
                 {
@@ -542,8 +543,8 @@ class Porter2 {
                     lab2: while (lab2 == true)
                     {
                         lab2 = false;
-                        // (, line 68
-                        // hop, line 68
+                        // (, line 71
+                        // hop, line 71
                         {
                             var c = this.cursor - 2;
                             if (this.limit_backward > c || c > this.limit)
@@ -552,7 +553,7 @@ class Porter2 {
                             }
                             this.cursor = c;
                         }
-                        // <-, line 68
+                        // <-, line 71
                         if (!this.slice_from("i"))
                         {
                             return false;
@@ -560,7 +561,7 @@ class Porter2 {
                         break lab1;
                     }
                     this.cursor = this.limit - v_2;
-                    // <-, line 68
+                    // <-, line 71
                     if (!this.slice_from("ie"))
                     {
                         return false;
@@ -568,14 +569,14 @@ class Porter2 {
                 }
                 break;
             case 3:
-                // (, line 69
-                // next, line 69
+                // (, line 72
+                // next, line 72
                 if (this.cursor <= this.limit_backward)
                 {
                     return false;
                 }
                 this.cursor--;
-                // gopast, line 69
+                // gopast, line 72
                 golab3: while(true)
                 {
                     var lab4 = true;
@@ -594,7 +595,7 @@ class Porter2 {
                     }
                     this.cursor--;
                 }
-                // delete, line 69
+                // delete, line 72
                 if (!this.slice_del())
                 {
                     return false;
@@ -604,41 +605,41 @@ class Porter2 {
         return true;
     }
 
-    r_Step_1b ()
+    r_Step_1b () 
     {
         var among_var;
-        // (, line 74
-        // [, line 75
+        // (, line 77
+        // [, line 78
         this.ket = this.cursor;
-        // substring, line 75
+        // substring, line 78
         among_var = this.find_among_b(this.a_4);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 75
+        // ], line 78
         this.bra = this.cursor;
         switch (among_var) {
             case 0:
                 return false;
             case 1:
-                // (, line 77
-                // call R1, line 77
+                // (, line 80
+                // call R1, line 80
                 if (!this.r_R1())
                 {
                     return false;
                 }
-                // <-, line 77
+                // <-, line 80
                 if (!this.slice_from("ee"))
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 79
-                // test, line 80
+                // (, line 82
+                // test, line 83
                 var v_1 = this.limit - this.cursor;
-                // gopast, line 80
+                // gopast, line 83
                 golab0: while(true)
                 {
                     var lab1 = true;
@@ -658,14 +659,14 @@ class Porter2 {
                     this.cursor--;
                 }
                 this.cursor = this.limit - v_1;
-                // delete, line 80
+                // delete, line 83
                 if (!this.slice_del())
                 {
                     return false;
                 }
-                // test, line 81
+                // test, line 84
                 var v_3 = this.limit - this.cursor;
-                // substring, line 81
+                // substring, line 84
                 among_var = this.find_among_b(this.a_3);
                 if (among_var == 0)
                 {
@@ -676,8 +677,8 @@ class Porter2 {
                     case 0:
                         return false;
                     case 1:
-                        // (, line 83
-                        // <+, line 83
+                        // (, line 86
+                        // <+, line 86
                         {
                             var c = this.cursor;
                             this.insert(this.cursor, this.cursor, "e");
@@ -685,39 +686,39 @@ class Porter2 {
                         }
                         break;
                     case 2:
-                        // (, line 86
-                        // [, line 86
+                        // (, line 89
+                        // [, line 89
                         this.ket = this.cursor;
-                        // next, line 86
+                        // next, line 89
                         if (this.cursor <= this.limit_backward)
                         {
                             return false;
                         }
                         this.cursor--;
-                        // ], line 86
+                        // ], line 89
                         this.bra = this.cursor;
-                        // delete, line 86
+                        // delete, line 89
                         if (!this.slice_del())
                         {
                             return false;
                         }
                         break;
                     case 3:
-                        // (, line 87
-                        // atmark, line 87
+                        // (, line 90
+                        // atmark, line 90
                         if (this.cursor != this.I_p1)
                         {
                             return false;
                         }
-                        // test, line 87
+                        // test, line 90
                         var v_4 = this.limit - this.cursor;
-                        // call shortv, line 87
+                        // call shortv, line 90
                         if (!this.r_shortv())
                         {
                             return false;
                         }
                         this.cursor = this.limit - v_4;
-                        // <+, line 87
+                        // <+, line 90
                         {
                             var c = this.cursor;
                             this.insert(this.cursor, this.cursor, "e");
@@ -730,12 +731,12 @@ class Porter2 {
         return true;
     }
 
-    r_Step_1c ()
+    r_Step_1c () 
     {
-        // (, line 93
-        // [, line 94
+        // (, line 96
+        // [, line 97
         this.ket = this.cursor;
-        // or, line 94
+        // or, line 97
         var lab0 = true;
         lab0: while (lab0 == true)
         {
@@ -745,7 +746,7 @@ class Porter2 {
             lab1: while (lab1 == true)
             {
                 lab1 = false;
-                // literal, line 94
+                // literal, line 97
                 if (!(this.eq_s_b("y")))
                 {
                     break lab1;
@@ -753,26 +754,26 @@ class Porter2 {
                 break lab0;
             }
             this.cursor = this.limit - v_1;
-            // literal, line 94
+            // literal, line 97
             if (!(this.eq_s_b("Y")))
             {
                 return false;
             }
         }
-        // ], line 94
+        // ], line 97
         this.bra = this.cursor;
         if (!(this.out_grouping_b(this.g_v, 97, 121)))
         {
             return false;
         }
-        // not, line 95
+        // not, line 98
         {
             var v_2 = this.limit - this.cursor;
             var lab2 = true;
             lab2: while (lab2 == true)
             {
                 lab2 = false;
-                // atlimit, line 95
+                // atlimit, line 98
                 if (this.cursor > this.limit_backward)
                 {
                     break lab2;
@@ -781,7 +782,7 @@ class Porter2 {
             }
             this.cursor = this.limit - v_2;
         }
-        // <-, line 96
+        // <-, line 99
         if (!this.slice_from("i"))
         {
             return false;
@@ -789,21 +790,21 @@ class Porter2 {
         return true;
     }
 
-    r_Step_2 ()
+    r_Step_2 () 
     {
         var among_var;
-        // (, line 99
-        // [, line 100
+        // (, line 102
+        // [, line 103
         this.ket = this.cursor;
-        // substring, line 100
+        // substring, line 103
         among_var = this.find_among_b(this.a_5);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 100
+        // ], line 103
         this.bra = this.cursor;
-        // call R1, line 100
+        // call R1, line 103
         if (!this.r_R1())
         {
             return false;
@@ -812,137 +813,137 @@ class Porter2 {
             case 0:
                 return false;
             case 1:
-                // (, line 101
-                // <-, line 101
+                // (, line 104
+                // <-, line 104
                 if (!this.slice_from("tion"))
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 102
-                // <-, line 102
+                // (, line 105
+                // <-, line 105
                 if (!this.slice_from("ence"))
                 {
                     return false;
                 }
                 break;
             case 3:
-                // (, line 103
-                // <-, line 103
+                // (, line 106
+                // <-, line 106
                 if (!this.slice_from("ance"))
                 {
                     return false;
                 }
                 break;
             case 4:
-                // (, line 104
-                // <-, line 104
+                // (, line 107
+                // <-, line 107
                 if (!this.slice_from("able"))
                 {
                     return false;
                 }
                 break;
             case 5:
-                // (, line 105
-                // <-, line 105
+                // (, line 108
+                // <-, line 108
                 if (!this.slice_from("ent"))
                 {
                     return false;
                 }
                 break;
             case 6:
-                // (, line 107
-                // <-, line 107
+                // (, line 110
+                // <-, line 110
                 if (!this.slice_from("ize"))
                 {
                     return false;
                 }
                 break;
             case 7:
-                // (, line 109
-                // <-, line 109
+                // (, line 112
+                // <-, line 112
                 if (!this.slice_from("ate"))
                 {
                     return false;
                 }
                 break;
             case 8:
-                // (, line 111
-                // <-, line 111
+                // (, line 114
+                // <-, line 114
                 if (!this.slice_from("al"))
                 {
                     return false;
                 }
                 break;
             case 9:
-                // (, line 112
-                // <-, line 112
+                // (, line 115
+                // <-, line 115
                 if (!this.slice_from("ful"))
                 {
                     return false;
                 }
                 break;
             case 10:
-                // (, line 114
-                // <-, line 114
+                // (, line 117
+                // <-, line 117
                 if (!this.slice_from("ous"))
                 {
                     return false;
                 }
                 break;
             case 11:
-                // (, line 116
-                // <-, line 116
+                // (, line 119
+                // <-, line 119
                 if (!this.slice_from("ive"))
                 {
                     return false;
                 }
                 break;
             case 12:
-                // (, line 118
-                // <-, line 118
+                // (, line 121
+                // <-, line 121
                 if (!this.slice_from("ble"))
                 {
                     return false;
                 }
                 break;
             case 13:
-                // (, line 119
-                // literal, line 119
+                // (, line 122
+                // literal, line 122
                 if (!(this.eq_s_b("l")))
                 {
                     return false;
                 }
-                // <-, line 119
+                // <-, line 122
                 if (!this.slice_from("og"))
                 {
                     return false;
                 }
                 break;
             case 14:
-                // (, line 120
-                // <-, line 120
+                // (, line 123
+                // <-, line 123
                 if (!this.slice_from("ful"))
                 {
                     return false;
                 }
                 break;
             case 15:
-                // (, line 121
-                // <-, line 121
+                // (, line 124
+                // <-, line 124
                 if (!this.slice_from("less"))
                 {
                     return false;
                 }
                 break;
             case 16:
-                // (, line 122
+                // (, line 125
                 if (!(this.in_grouping_b(this.g_valid_LI, 99, 116)))
                 {
                     return false;
                 }
-                // delete, line 122
+                // delete, line 125
                 if (!this.slice_del())
                 {
                     return false;
@@ -952,21 +953,21 @@ class Porter2 {
         return true;
     }
 
-    r_Step_3 ()
+    r_Step_3 () 
     {
         var among_var;
-        // (, line 126
-        // [, line 127
+        // (, line 129
+        // [, line 130
         this.ket = this.cursor;
-        // substring, line 127
+        // substring, line 130
         among_var = this.find_among_b(this.a_6);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 127
+        // ], line 130
         this.bra = this.cursor;
-        // call R1, line 127
+        // call R1, line 130
         if (!this.r_R1())
         {
             return false;
@@ -975,53 +976,53 @@ class Porter2 {
             case 0:
                 return false;
             case 1:
-                // (, line 128
-                // <-, line 128
+                // (, line 131
+                // <-, line 131
                 if (!this.slice_from("tion"))
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 129
-                // <-, line 129
+                // (, line 132
+                // <-, line 132
                 if (!this.slice_from("ate"))
                 {
                     return false;
                 }
                 break;
             case 3:
-                // (, line 130
-                // <-, line 130
+                // (, line 133
+                // <-, line 133
                 if (!this.slice_from("al"))
                 {
                     return false;
                 }
                 break;
             case 4:
-                // (, line 132
-                // <-, line 132
+                // (, line 135
+                // <-, line 135
                 if (!this.slice_from("ic"))
                 {
                     return false;
                 }
                 break;
             case 5:
-                // (, line 134
-                // delete, line 134
+                // (, line 137
+                // delete, line 137
                 if (!this.slice_del())
                 {
                     return false;
                 }
                 break;
             case 6:
-                // (, line 136
-                // call R2, line 136
+                // (, line 139
+                // call R2, line 139
                 if (!this.r_R2())
                 {
                     return false;
                 }
-                // delete, line 136
+                // delete, line 139
                 if (!this.slice_del())
                 {
                     return false;
@@ -1031,21 +1032,21 @@ class Porter2 {
         return true;
     }
 
-    r_Step_4 ()
+    r_Step_4 () 
     {
         var among_var;
-        // (, line 140
-        // [, line 141
+        // (, line 143
+        // [, line 144
         this.ket = this.cursor;
-        // substring, line 141
+        // substring, line 144
         among_var = this.find_among_b(this.a_7);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 141
+        // ], line 144
         this.bra = this.cursor;
-        // call R2, line 141
+        // call R2, line 144
         if (!this.r_R2())
         {
             return false;
@@ -1054,16 +1055,16 @@ class Porter2 {
             case 0:
                 return false;
             case 1:
-                // (, line 144
-                // delete, line 144
+                // (, line 147
+                // delete, line 147
                 if (!this.slice_del())
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 145
-                // or, line 145
+                // (, line 148
+                // or, line 148
                 var lab0 = true;
                 lab0: while (lab0 == true)
                 {
@@ -1073,7 +1074,7 @@ class Porter2 {
                     lab1: while (lab1 == true)
                     {
                         lab1 = false;
-                        // literal, line 145
+                        // literal, line 148
                         if (!(this.eq_s_b("s")))
                         {
                             break lab1;
@@ -1081,13 +1082,13 @@ class Porter2 {
                         break lab0;
                     }
                     this.cursor = this.limit - v_1;
-                    // literal, line 145
+                    // literal, line 148
                     if (!(this.eq_s_b("t")))
                     {
                         return false;
                     }
                 }
-                // delete, line 145
+                // delete, line 148
                 if (!this.slice_del())
                 {
                     return false;
@@ -1097,26 +1098,26 @@ class Porter2 {
         return true;
     }
 
-    r_Step_5 ()
+    r_Step_5 () 
     {
         var among_var;
-        // (, line 149
-        // [, line 150
+        // (, line 152
+        // [, line 153
         this.ket = this.cursor;
-        // substring, line 150
+        // substring, line 153
         among_var = this.find_among_b(this.a_8);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 150
+        // ], line 153
         this.bra = this.cursor;
         switch (among_var) {
             case 0:
                 return false;
             case 1:
-                // (, line 151
-                // or, line 151
+                // (, line 154
+                // or, line 154
                 var lab0 = true;
                 lab0: while (lab0 == true)
                 {
@@ -1126,7 +1127,7 @@ class Porter2 {
                     lab1: while (lab1 == true)
                     {
                         lab1 = false;
-                        // call R2, line 151
+                        // call R2, line 154
                         if (!this.r_R2())
                         {
                             break lab1;
@@ -1134,20 +1135,20 @@ class Porter2 {
                         break lab0;
                     }
                     this.cursor = this.limit - v_1;
-                    // (, line 151
-                    // call R1, line 151
+                    // (, line 154
+                    // call R1, line 154
                     if (!this.r_R1())
                     {
                         return false;
                     }
-                    // not, line 151
+                    // not, line 154
                     {
                         var v_2 = this.limit - this.cursor;
                         var lab2 = true;
                         lab2: while (lab2 == true)
                         {
                             lab2 = false;
-                            // call shortv, line 151
+                            // call shortv, line 154
                             if (!this.r_shortv())
                             {
                                 break lab2;
@@ -1157,25 +1158,25 @@ class Porter2 {
                         this.cursor = this.limit - v_2;
                     }
                 }
-                // delete, line 151
+                // delete, line 154
                 if (!this.slice_del())
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 152
-                // call R2, line 152
+                // (, line 155
+                // call R2, line 155
                 if (!this.r_R2())
                 {
                     return false;
                 }
-                // literal, line 152
+                // literal, line 155
                 if (!(this.eq_s_b("l")))
                 {
                     return false;
                 }
-                // delete, line 152
+                // delete, line 155
                 if (!this.slice_del())
                 {
                     return false;
@@ -1185,19 +1186,19 @@ class Porter2 {
         return true;
     }
 
-    r_exception2 ()
+    r_exception2 () 
     {
-        // (, line 156
-        // [, line 158
+        // (, line 159
+        // [, line 161
         this.ket = this.cursor;
-        // substring, line 158
+        // substring, line 161
         if (this.find_among_b(this.a_9) == 0)
         {
             return false;
         }
-        // ], line 158
+        // ], line 161
         this.bra = this.cursor;
-        // atlimit, line 158
+        // atlimit, line 161
         if (this.cursor > this.limit_backward)
         {
             return false;
@@ -1205,21 +1206,21 @@ class Porter2 {
         return true;
     }
 
-    r_exception1 ()
+    r_exception1 () 
     {
         var among_var;
-        // (, line 168
-        // [, line 170
+        // (, line 171
+        // [, line 173
         this.bra = this.cursor;
-        // substring, line 170
+        // substring, line 173
         among_var = this.find_among(this.a_10);
         if (among_var == 0)
         {
             return false;
         }
-        // ], line 170
+        // ], line 173
         this.ket = this.cursor;
-        // atlimit, line 170
+        // atlimit, line 173
         if (this.cursor < this.limit)
         {
             return false;
@@ -1228,57 +1229,57 @@ class Porter2 {
             case 0:
                 return false;
             case 1:
-                // (, line 174
-                // <-, line 174
+                // (, line 177
+                // <-, line 177
                 if (!this.slice_from("ski"))
                 {
                     return false;
                 }
                 break;
             case 2:
-                // (, line 175
-                // <-, line 175
+                // (, line 178
+                // <-, line 178
                 if (!this.slice_from("sky"))
                 {
                     return false;
                 }
                 break;
             case 3:
-                // (, line 176
-                // <-, line 176
+                // (, line 179
+                // <-, line 179
                 if (!this.slice_from("die"))
                 {
                     return false;
                 }
                 break;
             case 4:
-                // (, line 177
-                // <-, line 177
+                // (, line 180
+                // <-, line 180
                 if (!this.slice_from("lie"))
                 {
                     return false;
                 }
                 break;
             case 5:
-                // (, line 178
-                // <-, line 178
+                // (, line 181
+                // <-, line 181
                 if (!this.slice_from("tie"))
                 {
                     return false;
                 }
                 break;
             case 6:
-                // (, line 179
-                // <-, line 179
+                // (, line 182
+                // <-, line 182
                 if (!this.slice_from("replic"))
                 {
                     return false;
                 }
                 break;
             case 7:
-                // (, line 180
-                // <-, line 180
-                if (!this.slice_from("important"))
+                // (, line 183
+                // <-, line 183
+                if (!this.slice_from("retriabl"))
                 {
                     return false;
                 }
@@ -1286,46 +1287,54 @@ class Porter2 {
             case 8:
                 // (, line 184
                 // <-, line 184
-                if (!this.slice_from("idl"))
+                if (!this.slice_from("important"))
                 {
                     return false;
                 }
                 break;
             case 9:
-                // (, line 185
-                // <-, line 185
-                if (!this.slice_from("gentl"))
+                // (, line 188
+                // <-, line 188
+                if (!this.slice_from("idl"))
                 {
                     return false;
                 }
                 break;
             case 10:
-                // (, line 186
-                // <-, line 186
-                if (!this.slice_from("ugli"))
+                // (, line 189
+                // <-, line 189
+                if (!this.slice_from("gentl"))
                 {
                     return false;
                 }
                 break;
             case 11:
-                // (, line 187
-                // <-, line 187
-                if (!this.slice_from("earli"))
+                // (, line 190
+                // <-, line 190
+                if (!this.slice_from("ugli"))
                 {
                     return false;
                 }
                 break;
             case 12:
-                // (, line 188
-                // <-, line 188
-                if (!this.slice_from("onli"))
+                // (, line 191
+                // <-, line 191
+                if (!this.slice_from("earli"))
                 {
                     return false;
                 }
                 break;
             case 13:
-                // (, line 189
-                // <-, line 189
+                // (, line 192
+                // <-, line 192
+                if (!this.slice_from("onli"))
+                {
+                    return false;
+                }
+                break;
+            case 14:
+                // (, line 193
+                // <-, line 193
                 if (!this.slice_from("singl"))
                 {
                     return false;
@@ -1335,15 +1344,15 @@ class Porter2 {
         return true;
     }
 
-    r_postlude ()
+    r_postlude () 
     {
-        // (, line 206
-        // Boolean test Y_found, line 206
+        // (, line 210
+        // Boolean test Y_found, line 210
         if (!this.B_Y_found)
         {
             return false;
         }
-        // repeat, line 206
+        // repeat, line 210
         replab0: while(true)
         {
             var v_1 = this.cursor;
@@ -1351,8 +1360,8 @@ class Porter2 {
             lab1: while (lab1 == true)
             {
                 lab1 = false;
-                // (, line 206
-                // goto, line 206
+                // (, line 210
+                // goto, line 210
                 golab2: while(true)
                 {
                     var v_2 = this.cursor;
@@ -1360,15 +1369,15 @@ class Porter2 {
                     lab3: while (lab3 == true)
                     {
                         lab3 = false;
-                        // (, line 206
-                        // [, line 206
+                        // (, line 210
+                        // [, line 210
                         this.bra = this.cursor;
-                        // literal, line 206
+                        // literal, line 210
                         if (!(this.eq_s("Y")))
                         {
                             break lab3;
                         }
-                        // ], line 206
+                        // ], line 210
                         this.ket = this.cursor;
                         this.cursor = v_2;
                         break golab2;
@@ -1380,7 +1389,7 @@ class Porter2 {
                     }
                     this.cursor++;
                 }
-                // <-, line 206
+                // <-, line 210
                 if (!this.slice_from("y"))
                 {
                     return false;
@@ -1393,10 +1402,10 @@ class Porter2 {
         return true;
     }
 
-    stem ()
+    stem () 
     {
-        // (, line 208
-        // or, line 210
+        // (, line 212
+        // or, line 214
         var lab0 = true;
         lab0: while (lab0 == true)
         {
@@ -1406,7 +1415,7 @@ class Porter2 {
             lab1: while (lab1 == true)
             {
                 lab1 = false;
-                // call exception1, line 210
+                // call exception1, line 214
                 if (!this.r_exception1())
                 {
                     break lab1;
@@ -1418,14 +1427,14 @@ class Porter2 {
             lab2: while (lab2 == true)
             {
                 lab2 = false;
-                // not, line 211
+                // not, line 215
                 {
                     var v_2 = this.cursor;
                     var lab3 = true;
                     lab3: while (lab3 == true)
                     {
                         lab3 = false;
-                        // hop, line 211
+                        // hop, line 215
                         {
                             var c = this.cursor + 3;
                             if (0 > c || c > this.limit)
@@ -1441,50 +1450,50 @@ class Porter2 {
                 break lab0;
             }
             this.cursor = v_1;
-            // (, line 211
-            // do, line 212
+            // (, line 215
+            // do, line 216
             var v_3 = this.cursor;
             var lab4 = true;
             lab4: while (lab4 == true)
             {
                 lab4 = false;
-                // call prelude, line 212
+                // call prelude, line 216
                 if (!this.r_prelude())
                 {
                     break lab4;
                 }
             }
             this.cursor = v_3;
-            // do, line 213
+            // do, line 217
             var v_4 = this.cursor;
             var lab5 = true;
             lab5: while (lab5 == true)
             {
                 lab5 = false;
-                // call mark_regions, line 213
+                // call mark_regions, line 217
                 if (!this.r_mark_regions())
                 {
                     break lab5;
                 }
             }
             this.cursor = v_4;
-            // backwards, line 214
+            // backwards, line 218
             this.limit_backward = this.cursor; this.cursor = this.limit;
-            // (, line 214
-            // do, line 216
+            // (, line 218
+            // do, line 220
             var v_5 = this.limit - this.cursor;
             var lab6 = true;
             lab6: while (lab6 == true)
             {
                 lab6 = false;
-                // call Step_1a, line 216
+                // call Step_1a, line 220
                 if (!this.r_Step_1a())
                 {
                     break lab6;
                 }
             }
             this.cursor = this.limit - v_5;
-            // or, line 218
+            // or, line 222
             var lab7 = true;
             lab7: while (lab7 == true)
             {
@@ -1494,7 +1503,7 @@ class Porter2 {
                 lab8: while (lab8 == true)
                 {
                     lab8 = false;
-                    // call exception2, line 218
+                    // call exception2, line 222
                     if (!this.r_exception2())
                     {
                         break lab8;
@@ -1502,79 +1511,79 @@ class Porter2 {
                     break lab7;
                 }
                 this.cursor = this.limit - v_6;
-                // (, line 218
-                // do, line 220
+                // (, line 222
+                // do, line 224
                 var v_7 = this.limit - this.cursor;
                 var lab9 = true;
                 lab9: while (lab9 == true)
                 {
                     lab9 = false;
-                    // call Step_1b, line 220
+                    // call Step_1b, line 224
                     if (!this.r_Step_1b())
                     {
                         break lab9;
                     }
                 }
                 this.cursor = this.limit - v_7;
-                // do, line 221
+                // do, line 225
                 var v_8 = this.limit - this.cursor;
                 var lab10 = true;
                 lab10: while (lab10 == true)
                 {
                     lab10 = false;
-                    // call Step_1c, line 221
+                    // call Step_1c, line 225
                     if (!this.r_Step_1c())
                     {
                         break lab10;
                     }
                 }
                 this.cursor = this.limit - v_8;
-                // do, line 223
+                // do, line 227
                 var v_9 = this.limit - this.cursor;
                 var lab11 = true;
                 lab11: while (lab11 == true)
                 {
                     lab11 = false;
-                    // call Step_2, line 223
+                    // call Step_2, line 227
                     if (!this.r_Step_2())
                     {
                         break lab11;
                     }
                 }
                 this.cursor = this.limit - v_9;
-                // do, line 224
+                // do, line 228
                 var v_10 = this.limit - this.cursor;
                 var lab12 = true;
                 lab12: while (lab12 == true)
                 {
                     lab12 = false;
-                    // call Step_3, line 224
+                    // call Step_3, line 228
                     if (!this.r_Step_3())
                     {
                         break lab12;
                     }
                 }
                 this.cursor = this.limit - v_10;
-                // do, line 225
+                // do, line 229
                 var v_11 = this.limit - this.cursor;
                 var lab13 = true;
                 lab13: while (lab13 == true)
                 {
                     lab13 = false;
-                    // call Step_4, line 225
+                    // call Step_4, line 229
                     if (!this.r_Step_4())
                     {
                         break lab13;
                     }
                 }
                 this.cursor = this.limit - v_11;
-                // do, line 227
+                // do, line 231
                 var v_12 = this.limit - this.cursor;
                 var lab14 = true;
                 lab14: while (lab14 == true)
                 {
                     lab14 = false;
-                    // call Step_5, line 227
+                    // call Step_5, line 231
                     if (!this.r_Step_5())
                     {
                         break lab14;
@@ -1583,13 +1592,13 @@ class Porter2 {
                 this.cursor = this.limit - v_12;
             }
             this.cursor = this.limit_backward;
-            // do, line 230
+            // do, line 234
             var v_13 = this.cursor;
             var lab15 = true;
             lab15: while (lab15 == true)
             {
                 lab15 = false;
-                // call postlude, line 230
+                // call postlude, line 234
                 if (!this.r_postlude())
                 {
                     break lab15;
