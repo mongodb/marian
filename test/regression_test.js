@@ -99,7 +99,7 @@ describe('regression', function() {
         const [minScore, meanScore] = await computeScore(JSON.parse(queries), ctx.port)
         console.log(`Minimum nDCG@5: ${minScore}`)
         console.log(`Mean    nDCG@5: ${meanScore}`)
-        assert(meanScore > 0.54)
+        assert(meanScore > 0.56)
     })
 
     after('shutting down', function() {

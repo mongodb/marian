@@ -5,6 +5,7 @@ const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
 
 const MAX_MATCHES = 150
+const LOG_4_DIVISOR = 1.0 / Math.log2(4.0)
 
 /**
  * Normalize URLs by chopping off trailing index.html components.
@@ -19,7 +20,7 @@ function normalizeURL(url) {
 function computeScore(match, maxRelevancyScore, maxAuthorityScore) {
     const normalizedRelevancyScore = match.relevancyScore / maxRelevancyScore + 1
     const normalizedAuthorityScore = match.authorityScore / maxAuthorityScore + 1
-    return Math.log2(normalizedRelevancyScore) + Math.log2(normalizedAuthorityScore)
+    return Math.log2(normalizedRelevancyScore) + (Math.log2(normalizedAuthorityScore) * LOG_4_DIVISOR)
 }
 
 /**
