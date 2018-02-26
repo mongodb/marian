@@ -132,7 +132,7 @@
     },
     "aggregate": {
         "core/aggregation-pipeline-limits": 1,
-        "reference/command/aggregate": 1,
+        "reference/command/aggregate": 2,
         "reference/operator/aggregation/cond": 1,
         "reference/operator/aggregation/skip": 1,
         "meta/aggregation-quick-reference": 1,
@@ -142,7 +142,7 @@
         "reference/operator/aggregation/group": 1,
         "reference/operator/aggregation": 1,
         "reference/operator/aggregation/match": 1,
-        "reference/method/db.collection.aggregate": 1,
+        "reference/method/db.collection.aggregate": 2,
         "reference/operator/aggregation/reduce": 1,
         "reference/operator/aggregation/unwind": 1,
         "core/aggregation-pipeline": 1,
