@@ -17,7 +17,7 @@ integration: test
 	${MOCHA} --timeout 5000 test/integration_test.js
 
 regression: integration
-	MAX_WORKERS=1 ${MOCHA} --timeout 200000 test/regression_test.js
+	MAX_WORKERS=1 MANIFEST_SOURCE='bucket:docs-mongodb-org-prod/search-indexes/' ${MOCHA} --timeout 200000 test/regression_test.js
 
 run: src/fts/Porter2.js
 	${NODE} ./src/index.js bucket:docs-mongodb-org-prod/search-indexes/
