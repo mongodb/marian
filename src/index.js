@@ -310,8 +310,11 @@ class Marian {
         this.queryLoggingClient = null
 
         if (loggingConfig) {
-            const queryLoggingClient = new stitch.StitchClient(loggingConfig.serviceName)
-            queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey).then(() => {
+            let queryLoggingClient
+            stitch.StitchClientFactory.create(loggingConfig.serviceName).then((client) => {
+                queryLoggingClient = client
+                return queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey)
+            }).then(() => {
                 log.info('Signed into logging service')
                 this.queryLoggingClient = queryLoggingClient
             }).catch((err) => {
