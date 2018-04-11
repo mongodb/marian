@@ -16,8 +16,7 @@
     "dive": "^0.5.0",
     "iltorb": "^2.1.0",
     "mongodb-stitch": "^3.0.7",
-    "nspell": "^1.0.5",
-    "tiny-worker": "^2.1.2"
+    "nspell": "^1.0.5"
   },
   "devDependencies": {
     "eslint": "^4.19.1",

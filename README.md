@@ -14,7 +14,7 @@ You will need Node.js v8.0 or later.
 
 ```
 npm install
-MAX_WORKERS=2 node ./src/index.js [MANIFEST_SOURCE]
+node ./src/index.js [MANIFEST_SOURCE]
 ```
 
 Marian will then read the manifest directory given in `MANIFEST_SOURCE`, and
