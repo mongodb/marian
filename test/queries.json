@@ -1871,7 +1871,7 @@
         "reference/mongodb-extended-json": 1
     },
     "retriable writes": {
-        "core/distributed-queries": 2,
+        "core/retryable-writes": 2,
         "release-notes/3.6": 1,
         "release-notes/3.6-compatibility": 0,
         "reference/connection-string": 0,

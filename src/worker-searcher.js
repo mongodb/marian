@@ -104,7 +104,7 @@ function sync(manifests) {
         ['tags', 75],
     ])
 
-    for (const [term, [synonymn, weight]] of correlations) {
+    for (const [term, synonymn, weight] of correlations) {
         newIndex.correlateWord(term, synonymn, weight)
     }
 
