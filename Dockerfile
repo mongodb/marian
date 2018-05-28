@@ -6,4 +6,4 @@ RUN apk add --no-cache git
 RUN npm install --production
 
 EXPOSE 8000
-ENTRYPOINT ["node", "src/index.js", "bucket:docs-mongodb-org-prod/search-indexes/"]
+ENTRYPOINT ["node", "--max-old-space-size=4096", "src/index.js", "bucket:docs-mongodb-org-prod/search-indexes/"]
