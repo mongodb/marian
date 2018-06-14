@@ -19,7 +19,7 @@ integration: test
 	${MOCHA} --timeout 5000 test/integration_test.js
 
 regression: integration
-	MAX_WORKERS=1 ${MOCHA} --timeout 200000 test/regression_test.js
+	${MOCHA} --timeout 200000 test/regression_test.js
 
 run: src/fts/Porter2.js
 	${NODE} ./src/index.js ${MANIFEST_SOURCE}
