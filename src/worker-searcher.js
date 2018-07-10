@@ -101,7 +101,7 @@ function sync(manifests) {
         ['text', 1],
         ['headings', 5],
         ['title', 10],
-        ['tags', 75],
+        ['tags', 10],
     ])
 
     for (const [term, synonymn, weight] of correlations) {

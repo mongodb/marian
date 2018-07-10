@@ -127,7 +127,8 @@ const stopWords = new Set([
 
 const atomicPhraseMap = {
     'ops': 'manager',
-    'cloud': 'manager'
+    'cloud': 'manager',
+    'real': 'time'
 }
 const atomicPhrases = new Set(Object.entries(atomicPhraseMap).map((kv) => kv.join(' ')))
 
