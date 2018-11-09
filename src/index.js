@@ -16,7 +16,6 @@ const dive = require('dive')
 const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
-const stitch = require('mongodb-stitch')
 const Worker = require('tiny-worker')
 
 process.title = 'marian'
@@ -304,23 +303,8 @@ class Index {
 }
 
 class Marian {
-    constructor(bucket, loggingConfig) {
+    constructor(bucket) {
         this.index = new Index(bucket)
-
-        this.queryLoggingClient = null
-
-        if (loggingConfig) {
-            let queryLoggingClient
-            stitch.StitchClientFactory.create(loggingConfig.serviceName).then((client) => {
-                queryLoggingClient = client
-                return queryLoggingClient.authenticate('apiKey', loggingConfig.apiKey)
-            }).then(() => {
-                log.info('Signed into logging service')
-                this.queryLoggingClient = queryLoggingClient
-            }).catch((err) => {
-                log.error(`Failed to login to query logging database: ${err}`)
-            })
-        }
 
         // Fire-and-forget loading
         this.index.load().catch((err) => {
@@ -480,32 +464,13 @@ class Marian {
         responseBody = await compress(req, headers, responseBody)
         res.writeHead(200, headers)
         res.end(responseBody)
-
-        // Now that we've responded, try to log the search query
-        if (this.queryLoggingClient) {
-            this.queryLoggingClient.executeFunction('docsSearchTerms', parsedUrl.query.q).catch((err) => {
-                log.error(`Failed to log query: ${err}`)
-            })
-        }
     }
 }
 
 async function main() {
     Logger.setLevel('info', true)
 
-    let loggingConfig = null
-    const loggingConfigComponents = (process.env.LOGGING_CONFIG || ':').split(':')
-    if (loggingConfigComponents.length != 2) {
-        throw new Error(`Invalid LOGGING_CONFIG: "${process.env.LOGGING_CONFIG}"`)
-    }
-
-    if (loggingConfigComponents[0]) {
-        loggingConfig = {}
-        loggingConfig.serviceName = loggingConfigComponents[0]
-        loggingConfig.apiKey = loggingConfigComponents[1]
-    }
-
-    const server = new Marian(process.argv[2], loggingConfig)
+    const server = new Marian(process.argv[2])
     server.start(8000)
 }
 

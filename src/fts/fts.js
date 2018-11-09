@@ -490,6 +490,7 @@ class FTSIndex {
         if (query.phrases.length) {
             rootSet = rootSet.filter((match) => {
                 const tokens = new Map()
+                match.terms = Array.from(match.terms)
                 for (const term of match.terms) {
                     const termEntry = this.terms.get(term)
                     if (!termEntry) { return false }
@@ -499,6 +500,7 @@ class FTSIndex {
 
                     tokens.set(term, positions)
                 }
+                console.log(tokens)
                 return query.checkPhrases(tokens)
             })
         }

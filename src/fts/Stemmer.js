@@ -178,8 +178,9 @@ function tokenize(text, fuzzy) {
             tokens.push(token)
         }
 
-        if (fuzzy) {
-            for (const subtoken of token.split('.')) {
+        const subtokens = token.split('.')
+        if (fuzzy && subtokens.length > 1) {
+            for (const subtoken of subtokens) {
                 if (subtoken.length > 1) {
                     tokens.push(subtoken)
                 }
