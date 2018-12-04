@@ -9,7 +9,7 @@ pipeline:
     - git-${DRONE_COMMIT_SHA:0:7}
     - latest
     when:
-      branch: master
+      branch: [master, staging]
       event: push
 
   deploy-staging:
@@ -26,6 +26,24 @@ pipeline:
     tiller_ns: docs
     client_only: true
     values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.mongodb.sh"
+    when:
+      branch: staging
+      event: push
+
+  deploy-prod:
+    image: quay.io/ipedrazas/drone-helm
+    release: marian
+    namespace: docs
+    environment:
+      - API_SERVER=https://api.prod.mongodb.sh
+    prefix: PROD
+    secrets: [ prod_kubernetes_token ]
+    helm_repos: mongodb=https://10gen-ops.github.io/helm-charts
+    chart: mongodb/web-app
+    chart_version: 3.1.0
+    tiller_ns: docs
+    client_only: true
+    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.mongodb.sh"
     when:
       branch: master
       event: push
