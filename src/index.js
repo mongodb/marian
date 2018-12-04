@@ -471,7 +471,7 @@ async function main() {
     Logger.setLevel('info', true)
 
     const server = new Marian(process.argv[2])
-    server.start(8000)
+    server.start(8080)
 }
 
 main()

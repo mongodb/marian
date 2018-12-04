@@ -18,7 +18,7 @@ MAX_WORKERS=2 node ./src/index.js [MANIFEST_SOURCE]
 ```
 
 Marian will then read the manifest directory given in `MANIFEST_SOURCE`, and
-begin listening to requests on port 8000.
+begin listening to requests on port 8080.
 
 ### Manifest Source
 

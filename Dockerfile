@@ -5,5 +5,5 @@ COPY . /usr/src/app
 RUN apk add --no-cache git
 RUN npm install --production
 
-EXPOSE 8000
+EXPOSE 8080
 ENTRYPOINT ["node", "--max-old-space-size=4096", "src/index.js", "bucket:docs-mongodb-org-prod/search-indexes/"]
