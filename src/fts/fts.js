@@ -500,7 +500,6 @@ class FTSIndex {
 
                     tokens.set(term, positions)
                 }
-                console.log(tokens)
                 return query.checkPhrases(tokens)
             })
         }
