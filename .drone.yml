@@ -25,7 +25,7 @@ pipeline:
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
-    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.mongodb.sh"
+    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.mongodb.sh,ingress.hosts[1]=marian.docs.staging.corp.mongodb.com"
     when:
       branch: staging
       event: push
@@ -43,7 +43,7 @@ pipeline:
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
-    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.mongodb.sh"
+    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.mongodb.sh,ingress.hosts[1]=marian.docs.prod.corp.mongodb.com"
     when:
       branch: master
       event: push
