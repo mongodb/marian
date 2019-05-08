@@ -12,11 +12,11 @@ const util = require('util')
 const zlib = require('zlib')
 
 const Pool = require('./pool.js').Pool
+const TaskWorker = require('./TaskWorker.js').TaskWorker
+const log = require('./log.js').log
 const dive = require('dive')
 const iltorb = require('iltorb')
-const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
-const Worker = require('tiny-worker')
 
 process.title = 'marian'
 
@@ -24,16 +24,11 @@ const MAXIMUM_QUERY_LENGTH = 100
 
 // If a worker's backlog rises above this threshold, reject the request.
 // This prevents the server from getting bogged down for unbounded periods of time.
-const MAXIMUM_BACKLOG = 20
 const WARNING_BACKLOG = 15
 
 const STANDARD_HEADERS = {
     'X-Content-Type-Options': 'nosniff'
 }
-
-const log = new Logger({
-    showTimestamp: true,
-})
 
 /**
  * Find an acceptable compression format for the client, and return a compressed
@@ -80,66 +75,6 @@ function checkMethod(req, res, method) {
     return true
 }
 
-/** A web worker with a promise-oriented message-call interface. */
-class TaskWorker {
-    /**
-     * Create a new TaskWorker.
-     * @param {string} scriptPath - A path to a JS file to execute.
-     */
-    constructor(scriptPath) {
-        this.worker = new Worker(scriptPath)
-        this.worker.onmessage = this.onmessage.bind(this)
-
-        this.backlog = 0
-        this.pending = new Map()
-        this.messageId = 0
-    }
-
-    /**
-     * Send a message to this TaskWorker.
-     * @param {map} message - An object to send to the worker.
-     * @return {Promise}
-     */
-    send(message) {
-        if (this.backlog > MAXIMUM_BACKLOG) {
-            throw new Error('backlog-exceeded')
-        }
-
-        return new Promise((resolve, reject) => {
-            const messageId = this.messageId
-            this.messageId += 1
-            this.backlog += 1
-
-            this.worker.postMessage({message: message, messageId: messageId})
-            this.pending.set(messageId, [resolve, reject])
-        })
-    }
-
-    /**
-     * Handler for messages received from the worker.
-     * @private
-     * @param {MessageEvent} event
-     * @return {Promise<?, Error>}
-     */
-    onmessage(event) {
-        const pair = this.pending.get(event.data.messageId)
-        if (!pair) {
-            log.error(`Got unknown message ID ${event.data.messageId}`)
-            return
-        }
-
-        this.backlog -= 1
-        this.pending.delete(event.data.messageId)
-        const [resolve, reject] = pair
-        if (event.data.error) {
-            reject(new Error(event.data.error))
-            return
-        }
-
-        resolve(event.data)
-    }
-}
-
 class Index {
     constructor(manifestSource) {
         this.manifestSource = manifestSource
@@ -150,10 +85,11 @@ class Index {
         this.currentlyIndexing = false
 
         const MAX_WORKERS = parseInt(process.env.MAX_WORKERS) || 2
-        this.workers = new Pool(Math.min(os.cpus().length, MAX_WORKERS), () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
+        const nWorkers = Math.min(os.cpus().length, MAX_WORKERS)
+        this.workers = new Pool(nWorkers, () => new TaskWorker(pathModule.join(__dirname, 'worker-searcher.js')))
 
         // Suspend all of our workers until we have an index
-        for (const worker of this.workers.pool) {
+        for (const worker of this.workers) {
             this.workers.suspend(worker)
         }
     }
@@ -282,7 +218,7 @@ class Index {
 
         this.errors = []
         setTimeout(async () => {
-            for (const worker of this.workers.pool) {
+            for (const worker of this.workers) {
                 this.workers.suspend(worker)
                 try {
                     await worker.send({sync: manifests})
@@ -396,9 +332,15 @@ class Marian {
         body = await compress(req, headers, body)
 
         // If all workers are overloaded, return 503
-        let statusCode = 200
-        if (status.workers.filter((n) => n <= WARNING_BACKLOG).length === 0) {
-            statusCode = 503
+        // If a worker is dead, return 500
+        let statusCode = 503
+        for (const workerState of status.workers) {
+            if (workerState === 'd') {
+                statusCode = 500
+                break
+            } else if (workerState <= WARNING_BACKLOG) {
+                statusCode = 200
+            }
         }
 
         res.writeHead(statusCode, headers)
@@ -468,8 +410,6 @@ class Marian {
 }
 
 async function main() {
-    Logger.setLevel('info', true)
-
     const server = new Marian(process.argv[2])
     server.start(8080)
 }
