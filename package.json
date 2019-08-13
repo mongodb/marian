@@ -10,16 +10,16 @@
   "author": "Andrew Aldridge <andrew.aldridge@mongodb.com>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "aws-sdk": "^2.371.0",
+    "aws-sdk": "^2.508.0",
     "basic-logger": "^0.4.4",
-    "dictionary-en-us": "^2.0.0",
+    "dictionary-en-us": "^2.1.1",
     "dive": "^0.5.0",
-    "iltorb": "^2.4.1",
-    "nspell": "^2.1.1",
-    "tiny-worker": "^2.1.2"
+    "iltorb": "^2.4.3",
+    "nspell": "^2.1.2",
+    "tiny-worker": "^2.2.0"
   },
   "devDependencies": {
-    "eslint": "^5.9.0",
-    "mocha": "^5.2.0"
+    "eslint": "^6.1.0",
+    "mocha": "^6.2.0"
   }
 }
