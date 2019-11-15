@@ -1,13 +1,13 @@
 pipeline:
   publish:
     image: plugins/ecr
-    secrets: [ ecr_access_key, ecr_secret_key]
+    secrets: [ecr_access_key, ecr_secret_key]
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
     repo: 795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME}
     create_repository: true
     tags:
-    - git-${DRONE_COMMIT_SHA:0:7}
-    - latest
+      - git-${DRONE_COMMIT_SHA:0:7}
+      - latest
     when:
       branch: [master, staging]
       event: push
@@ -19,13 +19,13 @@ pipeline:
     environment:
       - API_SERVER=https://api.staging.mongodb.sh
     prefix: STAGING
-    secrets: [ staging_kubernetes_token ]
+    secrets: [staging_kubernetes_token]
     helm_repos: mongodb=https://10gen-ops.github.io/helm-charts
     chart: mongodb/web-app
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
-    values_files: [ "environments/prod.yml" ]
+    values_files: ["environments/prod.yml"]
     values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.mongodb.sh,ingress.hosts[1]=marian.docs.staging.corp.mongodb.com"
     when:
       branch: staging
@@ -38,13 +38,13 @@ pipeline:
     environment:
       - API_SERVER=https://api.prod.mongodb.sh
     prefix: PROD
-    secrets: [ prod_kubernetes_token ]
+    secrets: [prod_kubernetes_token]
     helm_repos: mongodb=https://10gen-ops.github.io/helm-charts
     chart: mongodb/web-app
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
-    values_files: [ "environments/prod.yml" ]
+    values_files: ["environments/prod.yml"]
     values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.mongodb.sh,ingress.hosts[1]=marian.docs.prod.corp.mongodb.com"
     when:
       branch: master
