@@ -13,39 +13,39 @@ pipeline:
       event: push
 
   deploy-staging:
-    image: quay.io/ipedrazas/drone-helm
+    image: quay.io/mongodb/drone-helm:v2.14.1-0.1.0
     release: marian
     namespace: docs
     environment:
-      - API_SERVER=https://api.staging.mongodb.sh
+      - API_SERVER=https://api.staging.corp.mongodb.com
     prefix: STAGING
     secrets: [staging_kubernetes_token]
-    helm_repos: mongodb=https://10gen-ops.github.io/helm-charts
+    helm_repos: mongodb=https://10gen.github.io/helm-charts
     chart: mongodb/web-app
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
     values_files: ["environments/prod.yml"]
-    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.mongodb.sh,ingress.hosts[1]=marian.docs.staging.corp.mongodb.com"
+    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.staging.corp.mongodb.com"
     when:
       branch: staging
       event: push
 
   deploy-prod:
-    image: quay.io/ipedrazas/drone-helm
+    image: quay.io/mongodb/drone-helm:v2.14.1-0.1.0
     release: marian
     namespace: docs
     environment:
-      - API_SERVER=https://api.prod.mongodb.sh
+      - API_SERVER=https://api.prod.corp.mongodb.com
     prefix: PROD
     secrets: [prod_kubernetes_token]
-    helm_repos: mongodb=https://10gen-ops.github.io/helm-charts
+    helm_repos: mongodb=https://10gen.github.io/helm-charts
     chart: mongodb/web-app
     chart_version: 3.1.0
     tiller_ns: docs
     client_only: true
     values_files: ["environments/prod.yml"]
-    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.mongodb.sh,ingress.hosts[1]=marian.docs.prod.corp.mongodb.com"
+    values: "image.tag=git-${DRONE_COMMIT_SHA:0:7},image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME},ingress.enabled=true,ingress.hosts[0]=marian.docs.prod.corp.mongodb.com"
     when:
       branch: master
       event: push
