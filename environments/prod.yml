@@ -1,0 +1,10 @@
+resources:
+  # guaranteed amount of resources
+  requests:
+    cpu: 100m
+    memory: 2500Mi
+  # maximum allowed resources
+  limits:
+    ## same as 2000m
+    cpu: 2
+    memory: 6500Mi
