@@ -2,7 +2,7 @@ resources:
   # guaranteed amount of resources
   requests:
     cpu: 100m
-    memory: 6000Mi
+    memory: 8000Mi
   # maximum allowed resources
   limits:
     ## same as 2000m
