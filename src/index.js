@@ -363,7 +363,8 @@ class Marian {
             const body = await compress(req, headers, JSON.stringify({'errors': [err]}))
 
             if (err.message === 'already-indexing') {
-                res.writeHead(503, headers)
+                log.warn('Index request rejected: busy')
+                res.writeHead(200, headers)
             } else {
                 res.writeHead(500, headers)
             }
