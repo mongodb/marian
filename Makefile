@@ -22,7 +22,7 @@ regression: integration
 	MAX_WORKERS=1 ${MOCHA} --timeout 200000 test/regression_test.js
 
 run: src/fts/Porter2.js
-	${NODE} ./src/index.js ${MANIFEST_SOURCE}
+	${NODE} --max-old-space-size=4096 ./src/index.js ${MANIFEST_SOURCE}
 
 snowball src/fts/Porter2.js: src/fts/Porter2.snowball
 	${NODE} tools/update_stemmer.js $^ src/fts/Porter2.js
