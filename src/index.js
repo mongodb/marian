@@ -388,7 +388,8 @@ class Marian {
         const headers = {
             'Content-Type': 'application/json',
             'Vary': 'Accept-Encoding',
-            'Pragma': 'no-cache'
+            'Pragma': 'no-cache',
+            'Access-Control-Allow-Origin': '*',
         }
         Object.assign(headers, STANDARD_HEADERS)
 
