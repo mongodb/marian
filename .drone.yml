@@ -13,7 +13,7 @@ pipeline:
       event: push
 
   deploy-staging:
-    image: quay.io/mongodb/drone-helm:v2.14.1-0.1.0
+    image: quay.io/mongodb/drone-helm:v2
     release: marian
     namespace: docs
     environment:
@@ -22,7 +22,7 @@ pipeline:
     secrets: [staging_kubernetes_token]
     helm_repos: mongodb=https://10gen.github.io/helm-charts
     chart: mongodb/web-app
-    chart_version: 3.1.0
+    chart_version: 4.6.0
     tiller_ns: docs
     client_only: true
     values_files: ["environments/prod.yml"]
@@ -32,7 +32,7 @@ pipeline:
       event: push
 
   deploy-prod:
-    image: quay.io/mongodb/drone-helm:v2.14.1-0.1.0
+    image: quay.io/mongodb/drone-helm:v2
     release: marian
     namespace: docs
     environment:
@@ -41,7 +41,7 @@ pipeline:
     secrets: [prod_kubernetes_token]
     helm_repos: mongodb=https://10gen.github.io/helm-charts
     chart: mongodb/web-app
-    chart_version: 3.1.0
+    chart_version: 4.6.0
     tiller_ns: docs
     client_only: true
     values_files: ["environments/prod.yml"]
