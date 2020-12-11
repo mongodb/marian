@@ -168,9 +168,13 @@ class TermEntry {
         this.timesAppeared = new Map()
     }
 
-    register(fieldName, docID) {
+    register(propertyName, fieldName, docID) {
         this.docs.push(docID)
-        this.timesAppeared.set(fieldName, (this.timesAppeared.get(fieldName) || 0) + 1)
+        this.timesAppeared.set(`${fieldName} ${propertyName}`, (this.timesAppeared.get(fieldName) || 0) + 1)
+    }
+
+    getTimesAppeared(propertyName, fieldName) {
+        return this.timesAppeared.get(`${fieldName} ${propertyName}`) || 0
     }
 
     addTokenPosition(docID, tokenID) {
@@ -184,7 +188,8 @@ class TermEntry {
 }
 
 class DocumentEntry {
-    constructor(len, termFrequencies) {
+    constructor(propertyName, len, termFrequencies) {
+        this.propertyName = propertyName
         this.len = len
         this.termFrequencies = termFrequencies
     }
@@ -288,7 +293,7 @@ class FTSIndex {
         return stemmedTerms
     }
 
-    add(document, onToken) {
+    add(propertyName, document, onToken) {
         document._id = this.docID
 
         if (document.links !== undefined && document.url !== undefined) {
@@ -345,7 +350,7 @@ class FTSIndex {
 
                 if (count === 0) {
                     this.trie.insert(token, document._id)
-                    indexEntry.register(field.name, document._id)
+                    indexEntry.register(propertyName, field.name, document._id)
                 }
 
                 indexEntry.addTokenPosition(document._id, this.termID)
@@ -355,7 +360,7 @@ class FTSIndex {
             this.termID += 1
 
             field.totalTokensSeen += numberOfTokens
-            field.documents.set(document._id, new DocumentEntry(numberOfTokens, termFrequencies))
+            field.documents.set(document._id, new DocumentEntry(propertyName, numberOfTokens, termFrequencies))
         }
 
         this.documentWeights.set(document._id, document.weight || 1)
@@ -466,7 +471,7 @@ class FTSIndex {
 
                     const termWeight = stemmedTerms.get(term) || 0.1
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
-                    const termProbability = (termEntry.timesAppeared.get(field.name) || 0) / Math.max(field.totalTokensSeen, 500)
+                    const termProbability = termEntry.getTimesAppeared(docEntry.propertyName, field.name) / Math.max(field.totalTokensSeen, 500)
 
                     // Larger fields yield larger scores, but we want fields to have roughly
                     // equal weight. field.lengthWeight is stupid, but yields good results.
