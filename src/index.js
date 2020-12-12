@@ -28,7 +28,8 @@ const MAXIMUM_BACKLOG = 20
 const WARNING_BACKLOG = 15
 
 const STANDARD_HEADERS = {
-    'X-Content-Type-Options': 'nosniff'
+    'X-Content-Type-Options': 'nosniff',
+    'X-Robots-Tag': 'noindex'
 }
 
 const log = new Logger({
@@ -302,6 +303,25 @@ class Index {
     }
 }
 
+class HTTPStatusException extends Error {
+    constructor(code, result) {
+        super(`HTTP Status ${code}`)
+        this.code = code
+        this.result = result
+        Error.captureStackTrace(this, HTTPStatusException)
+    }
+}
+
+function escapeHTML(unsafe) {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
+
 class Marian {
     constructor(bucket) {
         this.index = new Index(bucket)
@@ -343,6 +363,10 @@ class Marian {
         } else if (pathname === '/status') {
             if (checkMethod(req, res, 'GET')) {
                 this.handleStatus(parsedUrl, req, res)
+            }
+        } else if (pathname === '') {
+            if (checkMethod(req, res, 'GET')) {
+                this.handleUI(parsedUrl, req, res)
             }
         } else {
             res.writeHead(400, {})
@@ -407,6 +431,41 @@ class Marian {
         res.end(body)
     }
 
+    async fetchResults(parsedUrl, req) {
+        if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
+            const lastSyncDateNoMilliseconds = new Date(this.index.lastSyncDate)
+            // HTTP dates truncate the milliseconds.
+            lastSyncDateNoMilliseconds.setMilliseconds(0)
+
+            const ifModifiedSince = new Date(req.headers['if-modified-since'])
+            if (ifModifiedSince >= lastSyncDateNoMilliseconds) {
+                throw new HTTPStatusException(304, '')
+            }
+        }
+
+        if (parsedUrl.query.length > MAXIMUM_QUERY_LENGTH) {
+            throw new HTTPStatusException(400, '[]')
+        }
+
+        const query = parsedUrl.query.q
+        if (!query) {
+            throw new HTTPStatusException(400, '[]')
+        }
+
+        try {
+            return await this.index.search(query, parsedUrl.query.searchProperty)
+        } catch (err) {
+            if (err.message === 'still-indexing' || err.message === 'backlog-exceeded' || err.message === 'pool-unavailable') {
+                // Search index isn't yet loaded, or our backlog is out of control
+                throw new HTTPStatusException(503, '[]')
+            } else if (err.message === 'query-too-long') {
+                throw new HTTPStatusException(400, '[]')
+            }
+
+            log.error(err)
+        }
+    }
+
     async handleSearch(parsedUrl, req, res) {
         const headers = {
             'Content-Type': 'application/json',
@@ -416,52 +475,91 @@ class Marian {
         }
         Object.assign(headers, STANDARD_HEADERS)
 
-        if (req.headers['if-modified-since'] && this.index.lastSyncDate) {
-            const lastSyncDateNoMilliseconds = new Date(this.index.lastSyncDate)
-            // HTTP dates truncate the milliseconds.
-            lastSyncDateNoMilliseconds.setMilliseconds(0)
-
-            const ifModifiedSince = new Date(req.headers['if-modified-since'])
-            if (ifModifiedSince >= lastSyncDateNoMilliseconds) {
-                res.writeHead(304, headers)
-                res.end('')
-                return
+        let results
+        try {
+            results = await this.fetchResults(parsedUrl, req)
+        } catch (err) {
+            if (err.code === undefined || err.result === undefined) {
+                throw(err)
             }
-        }
 
-        if (parsedUrl.query.length > MAXIMUM_QUERY_LENGTH) {
-            res.writeHead(400, headers)
-            res.end('[]')
+            res.writeHead(err.code, headers)
+            res.end(err.result)
             return
+        }
+        headers['Last-Modified'] = this.index.lastSyncDate.toUTCString()
+        let responseBody = JSON.stringify(results)
+
+        responseBody = await compress(req, headers, responseBody)
+        res.writeHead(200, headers)
+        res.end(responseBody)
+    }
+
+    async handleUI(parsedUrl, req, res) {
+        const headers = {
+            'Content-Type': 'text/html',
+            'Vary': 'Accept-Encoding',
+            'Cache-Control': 'public,max-age=120,must-revalidate',
+        }
+        Object.assign(headers, STANDARD_HEADERS)
+
+        const dataList = this.index.manifests.map((manifest) => encodeURIComponent(manifest))
+        if (dataList.length > 0) {
+            dataList.unshift('')
         }
 
         const query = parsedUrl.query.q
-        if (!query) {
-            res.writeHead(400, headers)
-            res.end('[]')
-            return
-        }
+        let results = []
+        let resultError = false
+        if (query) {
+            try {
+                results = (await this.fetchResults(parsedUrl, req)).results
+            } catch (err) {
+                if (err.code === undefined || err.result === undefined) {
+                    throw(err)
+                }
 
-        let results
-        try {
-            results = await this.index.search(query, parsedUrl.query.searchProperty)
-        } catch (err) {
-            if (err.message === 'still-indexing' || err.message === 'backlog-exceeded' || err.message === 'pool-unavailable') {
-                // Search index isn't yet loaded, or our backlog is out of control
-                res.writeHead(503, headers)
-                res.end('[]')
-                return
-            } else if (err.message === 'query-too-long') {
-                res.writeHead(400, headers)
-                res.end('[]')
-                return
+                resultError = true
             }
-
-            log.error(err)
         }
 
-        headers['Last-Modified'] = this.index.lastSyncDate.toUTCString()
-        let responseBody = JSON.stringify(results)
+        const resultTextParts = results.map(result => {
+            return `<li class="result">
+                <div class="result-title"><a href="${encodeURI(result.url)}">${escapeHTML(result.title)}</a></div>
+                <div class="result-preview">${escapeHTML(result.preview)}</div>
+            </li>`
+        })
+
+        let responseBody = `<!doctype html><html lang="en">
+        <head><title>Marian</title><meta charset="utf-8">
+        <style>
+        .results{list-style:none}
+        .result{padding:10px 0;max-width:50em}
+        </style>
+        </head>
+        <body>
+        <form>
+        <input placeholder="Search query" maxLength=100 id="input-search" autofocus>
+        <input placeholder="Property to search" maxLength=50 list="properties" id="input-properties">
+        <input type="submit" value="search" formaction="javascript:search()">
+        </form>
+        <datalist id=properties>
+        ${dataList.join('<option>')}
+        </datalist>
+        ${resultError ? '<p>Error fetching results</p>' : ''}
+        <ul class="results">
+        ${resultTextParts.join('\n')}
+        </ul>
+        <script>
+        function search() {
+            const rawQuery = document.getElementById("input-search").value
+            const rawProperties = document.getElementById("input-properties").value.trim()
+            const propertiesComponent = rawProperties.length > 0 ? "&searchProperty=" + encodeURIComponent(rawProperties) : ""
+            document.location.search = "q=" + encodeURIComponent(rawQuery) + propertiesComponent
+        }
+        </script>
+        </body>
+        </html>`
 
         responseBody = await compress(req, headers, responseBody)
         res.writeHead(200, headers)
