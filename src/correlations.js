@@ -16,3 +16,7 @@ const CORRELATIONS = [
     ['auth', 'authentication', 0.25]]
 
 exports.correlations = CORRELATIONS
+
+// Words that, if given in the query, are required to exist in the output results.
+// Users can simulate this by wrapping terms in double-quotes to get the same result.
+exports.MANDATORY = new Set(['realm', 'atlas', 'compass'])

@@ -1,8 +1,10 @@
 'use strict'
 
+const pathModule = require('path')
 const Query = require('./Query.js').Query
 const Trie = require('./Trie.js').Trie
 const {isStopWord, stem, tokenize} = require('./Stemmer.js')
+const MANDATORY = require(pathModule.join(__dirname, '../correlations.js')).MANDATORY
 
 const MAX_MATCHES = 150
 const LOG_4_DIVISOR = 1.0 / Math.log2(4.0)
@@ -457,9 +459,18 @@ class FTSIndex {
             }
         }
 
+        const mandatoryTerms = new Set(Array.from(query.terms).filter(term => MANDATORY.has(term)).map(term => stem(term)))
+
         for (const tuple of this.collectMatchesFromTrie(stemmedTerms.keys())) {
             const [docID, terms] = tuple
+
             if (!query.filter(docID)) { continue }
+
+            let match = matchSet.get(docID)
+            if (!match) {
+                match = new Match(docID, 0, new Set())
+                matchSet.set(docID, match)
+            }
 
             for (const term of terms) {
                 const termEntry = this.terms.get(term)
@@ -469,7 +480,10 @@ class FTSIndex {
                     const docEntry = field.documents.get(docID)
                     if (!docEntry) { continue }
 
-                    const termWeight = stemmedTerms.get(term) || 0.1
+                    let termWeight = stemmedTerms.get(term) || 0.1
+                    if (mandatoryTerms.has(term)) {
+                        termWeight *= 1.5
+                    }
                     const termFrequencyInDoc = docEntry.termFrequencies.get(term) || 0
                     const termProbability = termEntry.getTimesAppeared(docEntry.propertyName, field.name) / Math.max(field.totalTokensSeen, 500)
 
@@ -480,13 +494,8 @@ class FTSIndex {
                         this.documentWeights.get(docID)
                 }
 
-                const match = matchSet.get(docID)
-                if (match) {
-                    match.relevancyScore += termRelevancyScore
-                    match.terms.add(term)
-                } else {
-                    matchSet.set(docID, new Match(docID, termRelevancyScore, new Set([term])))
-                }
+                match.relevancyScore += termRelevancyScore
+                match.terms.add(term)
             }
         }
 
