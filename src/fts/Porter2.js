@@ -1,13 +1,13 @@
 /* eslint-disable */
-'use strict'
+"use strict";
 
 class Among {
-    constructor (s, substring_i, result) {
-        this.s = s;
-        this.substring_i = substring_i;
-        this.result = result;
-        this.method = null;
-    }
+  constructor(s, substring_i, result) {
+    this.s = s;
+    this.substring_i = substring_i;
+    this.result = result;
+    this.method = null;
+  }
 }
 
 /**
@@ -15,1631 +15,1481 @@ class Among {
  * It implements the stemming algorithm defined by a snowball script.
  */
 
-class Porter2 {
-    constructor () {
-        this.a_0 = [
-            new Among("arsen", -1, -1),
-            new Among("commun", -1, -1),
-            new Among("gener", -1, -1)
-        ];
+export class Porter2 {
+  constructor() {
+    this.a_0 = [
+      new Among("arsen", -1, -1),
+      new Among("commun", -1, -1),
+      new Among("gener", -1, -1),
+    ];
 
-        this.a_1 = [
-            new Among("'", -1, 1),
-            new Among("'s'", 0, 1),
-            new Among("'s", -1, 1)
-        ];
+    this.a_1 = [
+      new Among("'", -1, 1),
+      new Among("'s'", 0, 1),
+      new Among("'s", -1, 1),
+    ];
 
-        this.a_2 = [
-            new Among("ied", -1, 2),
-            new Among("s", -1, 3),
-            new Among("ies", 1, 2),
-            new Among("sses", 1, 1),
-            new Among("ss", 1, -1),
-            new Among("us", 1, -1)
-        ];
+    this.a_2 = [
+      new Among("ied", -1, 2),
+      new Among("s", -1, 3),
+      new Among("ies", 1, 2),
+      new Among("sses", 1, 1),
+      new Among("ss", 1, -1),
+      new Among("us", 1, -1),
+    ];
 
-        this.a_3 = [
-            new Among("", -1, 3),
-            new Among("bb", 0, 2),
-            new Among("dd", 0, 2),
-            new Among("ff", 0, 2),
-            new Among("gg", 0, 2),
-            new Among("bl", 0, 1),
-            new Among("mm", 0, 2),
-            new Among("nn", 0, 2),
-            new Among("pp", 0, 2),
-            new Among("rr", 0, 2),
-            new Among("at", 0, 1),
-            new Among("tt", 0, 2),
-            new Among("iz", 0, 1)
-        ];
+    this.a_3 = [
+      new Among("", -1, 3),
+      new Among("bb", 0, 2),
+      new Among("dd", 0, 2),
+      new Among("ff", 0, 2),
+      new Among("gg", 0, 2),
+      new Among("bl", 0, 1),
+      new Among("mm", 0, 2),
+      new Among("nn", 0, 2),
+      new Among("pp", 0, 2),
+      new Among("rr", 0, 2),
+      new Among("at", 0, 1),
+      new Among("tt", 0, 2),
+      new Among("iz", 0, 1),
+    ];
 
-        this.a_4 = [
-            new Among("ed", -1, 2),
-            new Among("eed", 0, 1),
-            new Among("ing", -1, 2),
-            new Among("edly", -1, 2),
-            new Among("eedly", 3, 1),
-            new Among("ingly", -1, 2)
-        ];
+    this.a_4 = [
+      new Among("ed", -1, 2),
+      new Among("eed", 0, 1),
+      new Among("ing", -1, 2),
+      new Among("edly", -1, 2),
+      new Among("eedly", 3, 1),
+      new Among("ingly", -1, 2),
+    ];
 
-        this.a_5 = [
-            new Among("anci", -1, 3),
-            new Among("enci", -1, 2),
-            new Among("ogi", -1, 13),
-            new Among("li", -1, 16),
-            new Among("bli", 3, 12),
-            new Among("abli", 4, 4),
-            new Among("alli", 3, 8),
-            new Among("fulli", 3, 14),
-            new Among("lessli", 3, 15),
-            new Among("ousli", 3, 10),
-            new Among("entli", 3, 5),
-            new Among("aliti", -1, 8),
-            new Among("biliti", -1, 12),
-            new Among("iviti", -1, 11),
-            new Among("tional", -1, 1),
-            new Among("ational", 14, 7),
-            new Among("alism", -1, 8),
-            new Among("ation", -1, 7),
-            new Among("ization", 17, 6),
-            new Among("izer", -1, 6),
-            new Among("ator", -1, 7),
-            new Among("iveness", -1, 11),
-            new Among("fulness", -1, 9),
-            new Among("ousness", -1, 10)
-        ];
+    this.a_5 = [
+      new Among("anci", -1, 3),
+      new Among("enci", -1, 2),
+      new Among("ogi", -1, 13),
+      new Among("li", -1, 16),
+      new Among("bli", 3, 12),
+      new Among("abli", 4, 4),
+      new Among("alli", 3, 8),
+      new Among("fulli", 3, 14),
+      new Among("lessli", 3, 15),
+      new Among("ousli", 3, 10),
+      new Among("entli", 3, 5),
+      new Among("aliti", -1, 8),
+      new Among("biliti", -1, 12),
+      new Among("iviti", -1, 11),
+      new Among("tional", -1, 1),
+      new Among("ational", 14, 7),
+      new Among("alism", -1, 8),
+      new Among("ation", -1, 7),
+      new Among("ization", 17, 6),
+      new Among("izer", -1, 6),
+      new Among("ator", -1, 7),
+      new Among("iveness", -1, 11),
+      new Among("fulness", -1, 9),
+      new Among("ousness", -1, 10),
+    ];
 
-        this.a_6 = [
-            new Among("icate", -1, 4),
-            new Among("ative", -1, 6),
-            new Among("alize", -1, 3),
-            new Among("iciti", -1, 4),
-            new Among("ical", -1, 4),
-            new Among("tional", -1, 1),
-            new Among("ational", 5, 2),
-            new Among("ful", -1, 5),
-            new Among("ness", -1, 5)
-        ];
+    this.a_6 = [
+      new Among("icate", -1, 4),
+      new Among("ative", -1, 6),
+      new Among("alize", -1, 3),
+      new Among("iciti", -1, 4),
+      new Among("ical", -1, 4),
+      new Among("tional", -1, 1),
+      new Among("ational", 5, 2),
+      new Among("ful", -1, 5),
+      new Among("ness", -1, 5),
+    ];
 
-        this.a_7 = [
-            new Among("ic", -1, 1),
-            new Among("ance", -1, 1),
-            new Among("ence", -1, 1),
-            new Among("able", -1, 1),
-            new Among("ible", -1, 1),
-            new Among("ate", -1, 1),
-            new Among("ive", -1, 1),
-            new Among("ize", -1, 1),
-            new Among("iti", -1, 1),
-            new Among("al", -1, 1),
-            new Among("ism", -1, 1),
-            new Among("ion", -1, 2),
-            new Among("er", -1, 1),
-            new Among("ous", -1, 1),
-            new Among("ant", -1, 1),
-            new Among("ent", -1, 1),
-            new Among("ment", 15, 1),
-            new Among("ement", 16, 1)
-        ];
+    this.a_7 = [
+      new Among("ic", -1, 1),
+      new Among("ance", -1, 1),
+      new Among("ence", -1, 1),
+      new Among("able", -1, 1),
+      new Among("ible", -1, 1),
+      new Among("ate", -1, 1),
+      new Among("ive", -1, 1),
+      new Among("ize", -1, 1),
+      new Among("iti", -1, 1),
+      new Among("al", -1, 1),
+      new Among("ism", -1, 1),
+      new Among("ion", -1, 2),
+      new Among("er", -1, 1),
+      new Among("ous", -1, 1),
+      new Among("ant", -1, 1),
+      new Among("ent", -1, 1),
+      new Among("ment", 15, 1),
+      new Among("ement", 16, 1),
+    ];
 
-        this.a_8 = [
-            new Among("e", -1, 1),
-            new Among("l", -1, 2)
-        ];
+    this.a_8 = [
+      new Among("e", -1, 1),
+      new Among("l", -1, 2),
+    ];
 
-        this.a_9 = [
-            new Among("succeed", -1, -1),
-            new Among("proceed", -1, -1),
-            new Among("exceed", -1, -1),
-            new Among("canning", -1, -1),
-            new Among("inning", -1, -1),
-            new Among("earring", -1, -1),
-            new Among("herring", -1, -1),
-            new Among("outing", -1, -1)
-        ];
+    this.a_9 = [
+      new Among("succeed", -1, -1),
+      new Among("proceed", -1, -1),
+      new Among("exceed", -1, -1),
+      new Among("canning", -1, -1),
+      new Among("inning", -1, -1),
+      new Among("earring", -1, -1),
+      new Among("herring", -1, -1),
+      new Among("outing", -1, -1),
+    ];
 
-        this.a_10 = [
-            new Among("andes", -1, -1),
-            new Among("atlas", -1, -1),
-            new Among("bias", -1, -1),
-            new Among("cosmos", -1, -1),
-            new Among("dying", -1, 3),
-            new Among("early", -1, 12),
-            new Among("gently", -1, 10),
-            new Among("howe", -1, -1),
-            new Among("idly", -1, 9),
-            new Among("importance", -1, 8),
-            new Among("important", -1, -1),
-            new Among("lying", -1, 4),
-            new Among("news", -1, -1),
-            new Among("only", -1, 13),
-            new Among("replica", -1, 6),
-            new Among("retryable", -1, 7),
-            new Among("singly", -1, 14),
-            new Among("skies", -1, 2),
-            new Among("skis", -1, 1),
-            new Among("sky", -1, -1),
-            new Among("tying", -1, 5),
-            new Among("ugly", -1, 11)
-        ];
+    this.a_10 = [
+      new Among("andes", -1, -1),
+      new Among("atlas", -1, -1),
+      new Among("bias", -1, -1),
+      new Among("cosmos", -1, -1),
+      new Among("dying", -1, 3),
+      new Among("early", -1, 12),
+      new Among("gently", -1, 10),
+      new Among("howe", -1, -1),
+      new Among("idly", -1, 9),
+      new Among("importance", -1, 8),
+      new Among("important", -1, -1),
+      new Among("lying", -1, 4),
+      new Among("news", -1, -1),
+      new Among("only", -1, 13),
+      new Among("replica", -1, 6),
+      new Among("retryable", -1, 7),
+      new Among("singly", -1, 14),
+      new Among("skies", -1, 2),
+      new Among("skis", -1, 1),
+      new Among("sky", -1, -1),
+      new Among("tying", -1, 5),
+      new Among("ugly", -1, 11),
+    ];
 
-        this.g_v = [17, 65, 16, 1] ;
+    this.g_v = [17, 65, 16, 1];
 
-        this.g_v_WXY = [1, 17, 65, 208, 1] ;
+    this.g_v_WXY = [1, 17, 65, 208, 1];
 
-        this.g_valid_LI = [55, 141, 2] ;
+    this.g_valid_LI = [55, 141, 2];
 
-        this.B_Y_found = false;
-        this.I_p2 = 0;
-        this.I_p1 = 0;
+    this.B_Y_found = false;
+    this.I_p2 = 0;
+    this.I_p1 = 0;
+  }
+
+  r_prelude() {
+    // (, line 28
+    // unset Y_found, line 29
+    this.B_Y_found = false;
+    // do, line 30
+    var v_1 = this.cursor;
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      // (, line 30
+      // [, line 30
+      this.bra = this.cursor;
+      // literal, line 30
+      if (!(this.eq_s("'"))) {
+        break lab0;
+      }
+      // ], line 30
+      this.ket = this.cursor;
+      // delete, line 30
+      if (!this.slice_del()) {
+        return false;
+      }
     }
-
-    r_prelude () 
-    {
-        // (, line 28
-        // unset Y_found, line 29
-        this.B_Y_found = false;
-        // do, line 30
-        var v_1 = this.cursor;
-        var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            // (, line 30
-            // [, line 30
-            this.bra = this.cursor;
-            // literal, line 30
-            if (!(this.eq_s("'")))
-            {
-                break lab0;
+    this.cursor = v_1;
+    // do, line 31
+    var v_2 = this.cursor;
+    var lab1 = true;
+    lab1:
+    while (lab1 == true) {
+      lab1 = false;
+      // (, line 31
+      // [, line 31
+      this.bra = this.cursor;
+      // literal, line 31
+      if (!(this.eq_s("y"))) {
+        break lab1;
+      }
+      // ], line 31
+      this.ket = this.cursor;
+      // <-, line 31
+      if (!this.slice_from("Y")) {
+        return false;
+      }
+      // set Y_found, line 31
+      this.B_Y_found = true;
+    }
+    this.cursor = v_2;
+    // do, line 32
+    var v_3 = this.cursor;
+    var lab2 = true;
+    lab2:
+    while (lab2 == true) {
+      lab2 = false;
+      // repeat, line 32
+      replab3:
+      while (true) {
+        var v_4 = this.cursor;
+        var lab4 = true;
+        lab4:
+        while (lab4 == true) {
+          lab4 = false;
+          // (, line 32
+          // goto, line 32
+          golab5:
+          while (true) {
+            var v_5 = this.cursor;
+            var lab6 = true;
+            lab6:
+            while (lab6 == true) {
+              lab6 = false;
+              // (, line 32
+              if (!(this.in_grouping(this.g_v, 97, 121))) {
+                break lab6;
+              }
+              // [, line 32
+              this.bra = this.cursor;
+              // literal, line 32
+              if (!(this.eq_s("y"))) {
+                break lab6;
+              }
+              // ], line 32
+              this.ket = this.cursor;
+              this.cursor = v_5;
+              break golab5;
             }
-            // ], line 30
-            this.ket = this.cursor;
-            // delete, line 30
-            if (!this.slice_del())
-            {
-                return false;
+            this.cursor = v_5;
+            if (this.cursor >= this.limit) {
+              break lab4;
             }
+            this.cursor++;
+          }
+          // <-, line 32
+          if (!this.slice_from("Y")) {
+            return false;
+          }
+          // set Y_found, line 32
+          this.B_Y_found = true;
+          continue replab3;
         }
-        this.cursor = v_1;
-        // do, line 31
+        this.cursor = v_4;
+        break replab3;
+      }
+    }
+    this.cursor = v_3;
+    return true;
+  }
+
+  r_mark_regions() {
+    // (, line 35
+    this.I_p1 = this.limit;
+    this.I_p2 = this.limit;
+    // do, line 38
+    var v_1 = this.cursor;
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      // (, line 38
+      // or, line 44
+      var lab1 = true;
+      lab1:
+      while (lab1 == true) {
+        lab1 = false;
         var v_2 = this.cursor;
-        var lab1 = true;
-        lab1: while (lab1 == true)
-        {
-            lab1 = false;
-            // (, line 31
-            // [, line 31
-            this.bra = this.cursor;
-            // literal, line 31
-            if (!(this.eq_s("y")))
-            {
-                break lab1;
-            }
-            // ], line 31
-            this.ket = this.cursor;
-            // <-, line 31
-            if (!this.slice_from("Y"))
-            {
-                return false;
-            }
-            // set Y_found, line 31
-            this.B_Y_found = true;
+        var lab2 = true;
+        lab2:
+        while (lab2 == true) {
+          lab2 = false;
+          // among, line 39
+          if (this.find_among(this.a_0) == 0) {
+            break lab2;
+          }
+          break lab1;
         }
         this.cursor = v_2;
-        // do, line 32
-        var v_3 = this.cursor;
-        var lab2 = true;
-        lab2: while (lab2 == true)
-        {
+        // (, line 44
+        // gopast, line 44
+        golab3:
+        while (true) {
+          var lab4 = true;
+          lab4:
+          while (lab4 == true) {
+            lab4 = false;
+            if (!(this.in_grouping(this.g_v, 97, 121))) {
+              break lab4;
+            }
+            break golab3;
+          }
+          if (this.cursor >= this.limit) {
+            break lab0;
+          }
+          this.cursor++;
+        }
+        // gopast, line 44
+        golab5:
+        while (true) {
+          var lab6 = true;
+          lab6:
+          while (lab6 == true) {
+            lab6 = false;
+            if (!(this.out_grouping(this.g_v, 97, 121))) {
+              break lab6;
+            }
+            break golab5;
+          }
+          if (this.cursor >= this.limit) {
+            break lab0;
+          }
+          this.cursor++;
+        }
+      }
+      // setmark p1, line 45
+      this.I_p1 = this.cursor;
+      // gopast, line 46
+      golab7:
+      while (true) {
+        var lab8 = true;
+        lab8:
+        while (lab8 == true) {
+          lab8 = false;
+          if (!(this.in_grouping(this.g_v, 97, 121))) {
+            break lab8;
+          }
+          break golab7;
+        }
+        if (this.cursor >= this.limit) {
+          break lab0;
+        }
+        this.cursor++;
+      }
+      // gopast, line 46
+      golab9:
+      while (true) {
+        var lab10 = true;
+        lab10:
+        while (lab10 == true) {
+          lab10 = false;
+          if (!(this.out_grouping(this.g_v, 97, 121))) {
+            break lab10;
+          }
+          break golab9;
+        }
+        if (this.cursor >= this.limit) {
+          break lab0;
+        }
+        this.cursor++;
+      }
+      // setmark p2, line 46
+      this.I_p2 = this.cursor;
+    }
+    this.cursor = v_1;
+    return true;
+  }
+
+  r_shortv() {
+    // (, line 52
+    // or, line 54
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      var v_1 = this.limit - this.cursor;
+      var lab1 = true;
+      lab1:
+      while (lab1 == true) {
+        lab1 = false;
+        // (, line 53
+        if (!(this.out_grouping_b(this.g_v_WXY, 89, 121))) {
+          break lab1;
+        }
+        if (!(this.in_grouping_b(this.g_v, 97, 121))) {
+          break lab1;
+        }
+        if (!(this.out_grouping_b(this.g_v, 97, 121))) {
+          break lab1;
+        }
+        break lab0;
+      }
+      this.cursor = this.limit - v_1;
+      // (, line 55
+      if (!(this.out_grouping_b(this.g_v, 97, 121))) {
+        return false;
+      }
+      if (!(this.in_grouping_b(this.g_v, 97, 121))) {
+        return false;
+      }
+      // atlimit, line 55
+      if (this.cursor > this.limit_backward) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  r_R1() {
+    if (!(this.I_p1 <= this.cursor)) {
+      return false;
+    }
+    return true;
+  }
+
+  r_R2() {
+    if (!(this.I_p2 <= this.cursor)) {
+      return false;
+    }
+    return true;
+  }
+
+  r_Step_1a() {
+    var among_var;
+    // (, line 61
+    // try, line 62
+    var v_1 = this.limit - this.cursor;
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      // (, line 62
+      // [, line 63
+      this.ket = this.cursor;
+      // substring, line 63
+      among_var = this.find_among_b(this.a_1);
+      if (among_var == 0) {
+        this.cursor = this.limit - v_1;
+        break lab0;
+      }
+      // ], line 63
+      this.bra = this.cursor;
+      switch (among_var) {
+        case 0:
+          this.cursor = this.limit - v_1;
+          break lab0;
+        case 1:
+          // (, line 65
+          // delete, line 65
+          if (!this.slice_del()) {
+            return false;
+          }
+          break;
+      }
+    }
+    // [, line 68
+    this.ket = this.cursor;
+    // substring, line 68
+    among_var = this.find_among_b(this.a_2);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 68
+    this.bra = this.cursor;
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 69
+        // <-, line 69
+        if (!this.slice_from("ss")) {
+          return false;
+        }
+        break;
+      case 2:
+        // (, line 71
+        // or, line 71
+        var lab1 = true;
+        lab1:
+        while (lab1 == true) {
+          lab1 = false;
+          var v_2 = this.limit - this.cursor;
+          var lab2 = true;
+          lab2:
+          while (lab2 == true) {
             lab2 = false;
-            // repeat, line 32
-            replab3: while(true)
+            // (, line 71
+            // hop, line 71
             {
-                var v_4 = this.cursor;
-                var lab4 = true;
-                lab4: while (lab4 == true)
-                {
-                    lab4 = false;
-                    // (, line 32
-                    // goto, line 32
-                    golab5: while(true)
-                    {
-                        var v_5 = this.cursor;
-                        var lab6 = true;
-                        lab6: while (lab6 == true)
-                        {
-                            lab6 = false;
-                            // (, line 32
-                            if (!(this.in_grouping(this.g_v, 97, 121)))
-                            {
-                                break lab6;
-                            }
-                            // [, line 32
-                            this.bra = this.cursor;
-                            // literal, line 32
-                            if (!(this.eq_s("y")))
-                            {
-                                break lab6;
-                            }
-                            // ], line 32
-                            this.ket = this.cursor;
-                            this.cursor = v_5;
-                            break golab5;
-                        }
-                        this.cursor = v_5;
-                        if (this.cursor >= this.limit)
-                        {
-                            break lab4;
-                        }
-                        this.cursor++;
-                    }
-                    // <-, line 32
-                    if (!this.slice_from("Y"))
-                    {
-                        return false;
-                    }
-                    // set Y_found, line 32
-                    this.B_Y_found = true;
-                    continue replab3;
-                }
-                this.cursor = v_4;
-                break replab3;
+              var c = this.cursor - 2;
+              if (this.limit_backward > c || c > this.limit) {
+                break lab2;
+              }
+              this.cursor = c;
             }
-        }
-        this.cursor = v_3;
-        return true;
-    }
-
-    r_mark_regions () 
-    {
-        // (, line 35
-        this.I_p1 = this.limit;
-        this.I_p2 = this.limit;
-        // do, line 38
-        var v_1 = this.cursor;
-        var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            // (, line 38
-            // or, line 44
-            var lab1 = true;
-            lab1: while (lab1 == true)
-            {
-                lab1 = false;
-                var v_2 = this.cursor;
-                var lab2 = true;
-                lab2: while (lab2 == true)
-                {
-                    lab2 = false;
-                    // among, line 39
-                    if (this.find_among(this.a_0) == 0)
-                    {
-                        break lab2;
-                    }
-                    break lab1;
-                }
-                this.cursor = v_2;
-                // (, line 44
-                // gopast, line 44
-                golab3: while(true)
-                {
-                    var lab4 = true;
-                    lab4: while (lab4 == true)
-                    {
-                        lab4 = false;
-                        if (!(this.in_grouping(this.g_v, 97, 121)))
-                        {
-                            break lab4;
-                        }
-                        break golab3;
-                    }
-                    if (this.cursor >= this.limit)
-                    {
-                        break lab0;
-                    }
-                    this.cursor++;
-                }
-                // gopast, line 44
-                golab5: while(true)
-                {
-                    var lab6 = true;
-                    lab6: while (lab6 == true)
-                    {
-                        lab6 = false;
-                        if (!(this.out_grouping(this.g_v, 97, 121)))
-                        {
-                            break lab6;
-                        }
-                        break golab5;
-                    }
-                    if (this.cursor >= this.limit)
-                    {
-                        break lab0;
-                    }
-                    this.cursor++;
-                }
+            // <-, line 71
+            if (!this.slice_from("i")) {
+              return false;
             }
-            // setmark p1, line 45
-            this.I_p1 = this.cursor;
-            // gopast, line 46
-            golab7: while(true)
-            {
-                var lab8 = true;
-                lab8: while (lab8 == true)
-                {
-                    lab8 = false;
-                    if (!(this.in_grouping(this.g_v, 97, 121)))
-                    {
-                        break lab8;
-                    }
-                    break golab7;
-                }
-                if (this.cursor >= this.limit)
-                {
-                    break lab0;
-                }
-                this.cursor++;
-            }
-            // gopast, line 46
-            golab9: while(true)
-            {
-                var lab10 = true;
-                lab10: while (lab10 == true)
-                {
-                    lab10 = false;
-                    if (!(this.out_grouping(this.g_v, 97, 121)))
-                    {
-                        break lab10;
-                    }
-                    break golab9;
-                }
-                if (this.cursor >= this.limit)
-                {
-                    break lab0;
-                }
-                this.cursor++;
-            }
-            // setmark p2, line 46
-            this.I_p2 = this.cursor;
-        }
-        this.cursor = v_1;
-        return true;
-    }
-
-    r_shortv () 
-    {
-        // (, line 52
-        // or, line 54
-        var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            var v_1 = this.limit - this.cursor;
-            var lab1 = true;
-            lab1: while (lab1 == true)
-            {
-                lab1 = false;
-                // (, line 53
-                if (!(this.out_grouping_b(this.g_v_WXY, 89, 121)))
-                {
-                    break lab1;
-                }
-                if (!(this.in_grouping_b(this.g_v, 97, 121)))
-                {
-                    break lab1;
-                }
-                if (!(this.out_grouping_b(this.g_v, 97, 121)))
-                {
-                    break lab1;
-                }
-                break lab0;
-            }
-            this.cursor = this.limit - v_1;
-            // (, line 55
-            if (!(this.out_grouping_b(this.g_v, 97, 121)))
-            {
-                return false;
-            }
-            if (!(this.in_grouping_b(this.g_v, 97, 121)))
-            {
-                return false;
-            }
-            // atlimit, line 55
-            if (this.cursor > this.limit_backward)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    r_R1 () 
-    {
-        if (!(this.I_p1 <= this.cursor))
-        {
+            break lab1;
+          }
+          this.cursor = this.limit - v_2;
+          // <-, line 71
+          if (!this.slice_from("ie")) {
             return false;
+          }
         }
-        return true;
-    }
-
-    r_R2 () 
-    {
-        if (!(this.I_p2 <= this.cursor))
-        {
+        break;
+      case 3:
+        // (, line 72
+        // next, line 72
+        if (this.cursor <= this.limit_backward) {
+          return false;
+        }
+        this.cursor--;
+        // gopast, line 72
+        golab3:
+        while (true) {
+          var lab4 = true;
+          lab4:
+          while (lab4 == true) {
+            lab4 = false;
+            if (!(this.in_grouping_b(this.g_v, 97, 121))) {
+              break lab4;
+            }
+            break golab3;
+          }
+          if (this.cursor <= this.limit_backward) {
             return false;
+          }
+          this.cursor--;
         }
-        return true;
+        // delete, line 72
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
     }
+    return true;
+  }
 
-    r_Step_1a () 
-    {
-        var among_var;
-        // (, line 61
-        // try, line 62
+  r_Step_1b() {
+    var among_var;
+    // (, line 77
+    // [, line 78
+    this.ket = this.cursor;
+    // substring, line 78
+    among_var = this.find_among_b(this.a_4);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 78
+    this.bra = this.cursor;
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 80
+        // call R1, line 80
+        if (!this.r_R1()) {
+          return false;
+        }
+        // <-, line 80
+        if (!this.slice_from("ee")) {
+          return false;
+        }
+        break;
+      case 2:
+        // (, line 82
+        // test, line 83
         var v_1 = this.limit - this.cursor;
-        var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            // (, line 62
-            // [, line 63
+        // gopast, line 83
+        golab0:
+        while (true) {
+          var lab1 = true;
+          lab1:
+          while (lab1 == true) {
+            lab1 = false;
+            if (!(this.in_grouping_b(this.g_v, 97, 121))) {
+              break lab1;
+            }
+            break golab0;
+          }
+          if (this.cursor <= this.limit_backward) {
+            return false;
+          }
+          this.cursor--;
+        }
+        this.cursor = this.limit - v_1;
+        // delete, line 83
+        if (!this.slice_del()) {
+          return false;
+        }
+        // test, line 84
+        var v_3 = this.limit - this.cursor;
+        // substring, line 84
+        among_var = this.find_among_b(this.a_3);
+        if (among_var == 0) {
+          return false;
+        }
+        this.cursor = this.limit - v_3;
+        switch (among_var) {
+          case 0:
+            return false;
+          case 1:
+            // (, line 86
+            // <+, line 86
+            {
+              var c = this.cursor;
+              this.insert(this.cursor, this.cursor, "e");
+              this.cursor = c;
+            }
+            break;
+          case 2:
+            // (, line 89
+            // [, line 89
             this.ket = this.cursor;
-            // substring, line 63
-            among_var = this.find_among_b(this.a_1);
-            if (among_var == 0)
-            {
-                this.cursor = this.limit - v_1;
-                break lab0;
+            // next, line 89
+            if (this.cursor <= this.limit_backward) {
+              return false;
             }
-            // ], line 63
+            this.cursor--;
+            // ], line 89
             this.bra = this.cursor;
-            switch (among_var) {
-                case 0:
-                    this.cursor = this.limit - v_1;
-                    break lab0;
-                case 1:
-                    // (, line 65
-                    // delete, line 65
-                    if (!this.slice_del())
-                    {
-                        return false;
-                    }
-                    break;
+            // delete, line 89
+            if (!this.slice_del()) {
+              return false;
             }
+            break;
+          case 3:
+            // (, line 90
+            // atmark, line 90
+            if (this.cursor != this.I_p1) {
+              return false;
+            }
+            // test, line 90
+            var v_4 = this.limit - this.cursor;
+            // call shortv, line 90
+            if (!this.r_shortv()) {
+              return false;
+            }
+            this.cursor = this.limit - v_4;
+            // <+, line 90
+            {
+              var c = this.cursor;
+              this.insert(this.cursor, this.cursor, "e");
+              this.cursor = c;
+            }
+            break;
         }
-        // [, line 68
-        this.ket = this.cursor;
-        // substring, line 68
-        among_var = this.find_among_b(this.a_2);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 68
-        this.bra = this.cursor;
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 69
-                // <-, line 69
-                if (!this.slice_from("ss"))
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 71
-                // or, line 71
-                var lab1 = true;
-                lab1: while (lab1 == true)
-                {
-                    lab1 = false;
-                    var v_2 = this.limit - this.cursor;
-                    var lab2 = true;
-                    lab2: while (lab2 == true)
-                    {
-                        lab2 = false;
-                        // (, line 71
-                        // hop, line 71
-                        {
-                            var c = this.cursor - 2;
-                            if (this.limit_backward > c || c > this.limit)
-                            {
-                                break lab2;
-                            }
-                            this.cursor = c;
-                        }
-                        // <-, line 71
-                        if (!this.slice_from("i"))
-                        {
-                            return false;
-                        }
-                        break lab1;
-                    }
-                    this.cursor = this.limit - v_2;
-                    // <-, line 71
-                    if (!this.slice_from("ie"))
-                    {
-                        return false;
-                    }
-                }
-                break;
-            case 3:
-                // (, line 72
-                // next, line 72
-                if (this.cursor <= this.limit_backward)
-                {
-                    return false;
-                }
-                this.cursor--;
-                // gopast, line 72
-                golab3: while(true)
-                {
-                    var lab4 = true;
-                    lab4: while (lab4 == true)
-                    {
-                        lab4 = false;
-                        if (!(this.in_grouping_b(this.g_v, 97, 121)))
-                        {
-                            break lab4;
-                        }
-                        break golab3;
-                    }
-                    if (this.cursor <= this.limit_backward)
-                    {
-                        return false;
-                    }
-                    this.cursor--;
-                }
-                // delete, line 72
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+        break;
     }
+    return true;
+  }
 
-    r_Step_1b () 
-    {
-        var among_var;
-        // (, line 77
-        // [, line 78
-        this.ket = this.cursor;
-        // substring, line 78
-        among_var = this.find_among_b(this.a_4);
-        if (among_var == 0)
-        {
-            return false;
+  r_Step_1c() {
+    // (, line 96
+    // [, line 97
+    this.ket = this.cursor;
+    // or, line 97
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      var v_1 = this.limit - this.cursor;
+      var lab1 = true;
+      lab1:
+      while (lab1 == true) {
+        lab1 = false;
+        // literal, line 97
+        if (!(this.eq_s_b("y"))) {
+          break lab1;
         }
-        // ], line 78
-        this.bra = this.cursor;
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 80
-                // call R1, line 80
-                if (!this.r_R1())
-                {
-                    return false;
-                }
-                // <-, line 80
-                if (!this.slice_from("ee"))
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 82
-                // test, line 83
-                var v_1 = this.limit - this.cursor;
-                // gopast, line 83
-                golab0: while(true)
-                {
-                    var lab1 = true;
-                    lab1: while (lab1 == true)
-                    {
-                        lab1 = false;
-                        if (!(this.in_grouping_b(this.g_v, 97, 121)))
-                        {
-                            break lab1;
-                        }
-                        break golab0;
-                    }
-                    if (this.cursor <= this.limit_backward)
-                    {
-                        return false;
-                    }
-                    this.cursor--;
-                }
-                this.cursor = this.limit - v_1;
-                // delete, line 83
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                // test, line 84
-                var v_3 = this.limit - this.cursor;
-                // substring, line 84
-                among_var = this.find_among_b(this.a_3);
-                if (among_var == 0)
-                {
-                    return false;
-                }
-                this.cursor = this.limit - v_3;
-                switch (among_var) {
-                    case 0:
-                        return false;
-                    case 1:
-                        // (, line 86
-                        // <+, line 86
-                        {
-                            var c = this.cursor;
-                            this.insert(this.cursor, this.cursor, "e");
-                            this.cursor = c;
-                        }
-                        break;
-                    case 2:
-                        // (, line 89
-                        // [, line 89
-                        this.ket = this.cursor;
-                        // next, line 89
-                        if (this.cursor <= this.limit_backward)
-                        {
-                            return false;
-                        }
-                        this.cursor--;
-                        // ], line 89
-                        this.bra = this.cursor;
-                        // delete, line 89
-                        if (!this.slice_del())
-                        {
-                            return false;
-                        }
-                        break;
-                    case 3:
-                        // (, line 90
-                        // atmark, line 90
-                        if (this.cursor != this.I_p1)
-                        {
-                            return false;
-                        }
-                        // test, line 90
-                        var v_4 = this.limit - this.cursor;
-                        // call shortv, line 90
-                        if (!this.r_shortv())
-                        {
-                            return false;
-                        }
-                        this.cursor = this.limit - v_4;
-                        // <+, line 90
-                        {
-                            var c = this.cursor;
-                            this.insert(this.cursor, this.cursor, "e");
-                            this.cursor = c;
-                        }
-                        break;
-                }
-                break;
-        }
-        return true;
+        break lab0;
+      }
+      this.cursor = this.limit - v_1;
+      // literal, line 97
+      if (!(this.eq_s_b("Y"))) {
+        return false;
+      }
     }
-
-    r_Step_1c () 
+    // ], line 97
+    this.bra = this.cursor;
+    if (!(this.out_grouping_b(this.g_v, 97, 121))) {
+      return false;
+    }
+    // not, line 98
     {
-        // (, line 96
-        // [, line 97
-        this.ket = this.cursor;
-        // or, line 97
+      var v_2 = this.limit - this.cursor;
+      var lab2 = true;
+      lab2:
+      while (lab2 == true) {
+        lab2 = false;
+        // atlimit, line 98
+        if (this.cursor > this.limit_backward) {
+          break lab2;
+        }
+        return false;
+      }
+      this.cursor = this.limit - v_2;
+    }
+    // <-, line 99
+    if (!this.slice_from("i")) {
+      return false;
+    }
+    return true;
+  }
+
+  r_Step_2() {
+    var among_var;
+    // (, line 102
+    // [, line 103
+    this.ket = this.cursor;
+    // substring, line 103
+    among_var = this.find_among_b(this.a_5);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 103
+    this.bra = this.cursor;
+    // call R1, line 103
+    if (!this.r_R1()) {
+      return false;
+    }
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 104
+        // <-, line 104
+        if (!this.slice_from("tion")) {
+          return false;
+        }
+        break;
+      case 2:
+        // (, line 105
+        // <-, line 105
+        if (!this.slice_from("ence")) {
+          return false;
+        }
+        break;
+      case 3:
+        // (, line 106
+        // <-, line 106
+        if (!this.slice_from("ance")) {
+          return false;
+        }
+        break;
+      case 4:
+        // (, line 107
+        // <-, line 107
+        if (!this.slice_from("able")) {
+          return false;
+        }
+        break;
+      case 5:
+        // (, line 108
+        // <-, line 108
+        if (!this.slice_from("ent")) {
+          return false;
+        }
+        break;
+      case 6:
+        // (, line 110
+        // <-, line 110
+        if (!this.slice_from("ize")) {
+          return false;
+        }
+        break;
+      case 7:
+        // (, line 112
+        // <-, line 112
+        if (!this.slice_from("ate")) {
+          return false;
+        }
+        break;
+      case 8:
+        // (, line 114
+        // <-, line 114
+        if (!this.slice_from("al")) {
+          return false;
+        }
+        break;
+      case 9:
+        // (, line 115
+        // <-, line 115
+        if (!this.slice_from("ful")) {
+          return false;
+        }
+        break;
+      case 10:
+        // (, line 117
+        // <-, line 117
+        if (!this.slice_from("ous")) {
+          return false;
+        }
+        break;
+      case 11:
+        // (, line 119
+        // <-, line 119
+        if (!this.slice_from("ive")) {
+          return false;
+        }
+        break;
+      case 12:
+        // (, line 121
+        // <-, line 121
+        if (!this.slice_from("ble")) {
+          return false;
+        }
+        break;
+      case 13:
+        // (, line 122
+        // literal, line 122
+        if (!(this.eq_s_b("l"))) {
+          return false;
+        }
+        // <-, line 122
+        if (!this.slice_from("og")) {
+          return false;
+        }
+        break;
+      case 14:
+        // (, line 123
+        // <-, line 123
+        if (!this.slice_from("ful")) {
+          return false;
+        }
+        break;
+      case 15:
+        // (, line 124
+        // <-, line 124
+        if (!this.slice_from("less")) {
+          return false;
+        }
+        break;
+      case 16:
+        // (, line 125
+        if (!(this.in_grouping_b(this.g_valid_LI, 99, 116))) {
+          return false;
+        }
+        // delete, line 125
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
+    }
+    return true;
+  }
+
+  r_Step_3() {
+    var among_var;
+    // (, line 129
+    // [, line 130
+    this.ket = this.cursor;
+    // substring, line 130
+    among_var = this.find_among_b(this.a_6);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 130
+    this.bra = this.cursor;
+    // call R1, line 130
+    if (!this.r_R1()) {
+      return false;
+    }
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 131
+        // <-, line 131
+        if (!this.slice_from("tion")) {
+          return false;
+        }
+        break;
+      case 2:
+        // (, line 132
+        // <-, line 132
+        if (!this.slice_from("ate")) {
+          return false;
+        }
+        break;
+      case 3:
+        // (, line 133
+        // <-, line 133
+        if (!this.slice_from("al")) {
+          return false;
+        }
+        break;
+      case 4:
+        // (, line 135
+        // <-, line 135
+        if (!this.slice_from("ic")) {
+          return false;
+        }
+        break;
+      case 5:
+        // (, line 137
+        // delete, line 137
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
+      case 6:
+        // (, line 139
+        // call R2, line 139
+        if (!this.r_R2()) {
+          return false;
+        }
+        // delete, line 139
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
+    }
+    return true;
+  }
+
+  r_Step_4() {
+    var among_var;
+    // (, line 143
+    // [, line 144
+    this.ket = this.cursor;
+    // substring, line 144
+    among_var = this.find_among_b(this.a_7);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 144
+    this.bra = this.cursor;
+    // call R2, line 144
+    if (!this.r_R2()) {
+      return false;
+    }
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 147
+        // delete, line 147
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
+      case 2:
+        // (, line 148
+        // or, line 148
         var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            var v_1 = this.limit - this.cursor;
-            var lab1 = true;
-            lab1: while (lab1 == true)
-            {
-                lab1 = false;
-                // literal, line 97
-                if (!(this.eq_s_b("y")))
-                {
-                    break lab1;
-                }
-                break lab0;
+        lab0:
+        while (lab0 == true) {
+          lab0 = false;
+          var v_1 = this.limit - this.cursor;
+          var lab1 = true;
+          lab1:
+          while (lab1 == true) {
+            lab1 = false;
+            // literal, line 148
+            if (!(this.eq_s_b("s"))) {
+              break lab1;
             }
-            this.cursor = this.limit - v_1;
-            // literal, line 97
-            if (!(this.eq_s_b("Y")))
-            {
-                return false;
-            }
-        }
-        // ], line 97
-        this.bra = this.cursor;
-        if (!(this.out_grouping_b(this.g_v, 97, 121)))
-        {
+            break lab0;
+          }
+          this.cursor = this.limit - v_1;
+          // literal, line 148
+          if (!(this.eq_s_b("t"))) {
             return false;
+          }
         }
-        // not, line 98
-        {
+        // delete, line 148
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
+    }
+    return true;
+  }
+
+  r_Step_5() {
+    var among_var;
+    // (, line 152
+    // [, line 153
+    this.ket = this.cursor;
+    // substring, line 153
+    among_var = this.find_among_b(this.a_8);
+    if (among_var == 0) {
+      return false;
+    }
+    // ], line 153
+    this.bra = this.cursor;
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 154
+        // or, line 154
+        var lab0 = true;
+        lab0:
+        while (lab0 == true) {
+          lab0 = false;
+          var v_1 = this.limit - this.cursor;
+          var lab1 = true;
+          lab1:
+          while (lab1 == true) {
+            lab1 = false;
+            // call R2, line 154
+            if (!this.r_R2()) {
+              break lab1;
+            }
+            break lab0;
+          }
+          this.cursor = this.limit - v_1;
+          // (, line 154
+          // call R1, line 154
+          if (!this.r_R1()) {
+            return false;
+          }
+          // not, line 154
+          {
             var v_2 = this.limit - this.cursor;
             var lab2 = true;
-            lab2: while (lab2 == true)
-            {
-                lab2 = false;
-                // atlimit, line 98
-                if (this.cursor > this.limit_backward)
-                {
-                    break lab2;
-                }
-                return false;
+            lab2:
+            while (lab2 == true) {
+              lab2 = false;
+              // call shortv, line 154
+              if (!this.r_shortv()) {
+                break lab2;
+              }
+              return false;
             }
             this.cursor = this.limit - v_2;
+          }
         }
-        // <-, line 99
-        if (!this.slice_from("i"))
-        {
-            return false;
+        // delete, line 154
+        if (!this.slice_del()) {
+          return false;
         }
-        return true;
+        break;
+      case 2:
+        // (, line 155
+        // call R2, line 155
+        if (!this.r_R2()) {
+          return false;
+        }
+        // literal, line 155
+        if (!(this.eq_s_b("l"))) {
+          return false;
+        }
+        // delete, line 155
+        if (!this.slice_del()) {
+          return false;
+        }
+        break;
     }
+    return true;
+  }
 
-    r_Step_2 () 
-    {
-        var among_var;
-        // (, line 102
-        // [, line 103
-        this.ket = this.cursor;
-        // substring, line 103
-        among_var = this.find_among_b(this.a_5);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 103
-        this.bra = this.cursor;
-        // call R1, line 103
-        if (!this.r_R1())
-        {
-            return false;
-        }
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 104
-                // <-, line 104
-                if (!this.slice_from("tion"))
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 105
-                // <-, line 105
-                if (!this.slice_from("ence"))
-                {
-                    return false;
-                }
-                break;
-            case 3:
-                // (, line 106
-                // <-, line 106
-                if (!this.slice_from("ance"))
-                {
-                    return false;
-                }
-                break;
-            case 4:
-                // (, line 107
-                // <-, line 107
-                if (!this.slice_from("able"))
-                {
-                    return false;
-                }
-                break;
-            case 5:
-                // (, line 108
-                // <-, line 108
-                if (!this.slice_from("ent"))
-                {
-                    return false;
-                }
-                break;
-            case 6:
-                // (, line 110
-                // <-, line 110
-                if (!this.slice_from("ize"))
-                {
-                    return false;
-                }
-                break;
-            case 7:
-                // (, line 112
-                // <-, line 112
-                if (!this.slice_from("ate"))
-                {
-                    return false;
-                }
-                break;
-            case 8:
-                // (, line 114
-                // <-, line 114
-                if (!this.slice_from("al"))
-                {
-                    return false;
-                }
-                break;
-            case 9:
-                // (, line 115
-                // <-, line 115
-                if (!this.slice_from("ful"))
-                {
-                    return false;
-                }
-                break;
-            case 10:
-                // (, line 117
-                // <-, line 117
-                if (!this.slice_from("ous"))
-                {
-                    return false;
-                }
-                break;
-            case 11:
-                // (, line 119
-                // <-, line 119
-                if (!this.slice_from("ive"))
-                {
-                    return false;
-                }
-                break;
-            case 12:
-                // (, line 121
-                // <-, line 121
-                if (!this.slice_from("ble"))
-                {
-                    return false;
-                }
-                break;
-            case 13:
-                // (, line 122
-                // literal, line 122
-                if (!(this.eq_s_b("l")))
-                {
-                    return false;
-                }
-                // <-, line 122
-                if (!this.slice_from("og"))
-                {
-                    return false;
-                }
-                break;
-            case 14:
-                // (, line 123
-                // <-, line 123
-                if (!this.slice_from("ful"))
-                {
-                    return false;
-                }
-                break;
-            case 15:
-                // (, line 124
-                // <-, line 124
-                if (!this.slice_from("less"))
-                {
-                    return false;
-                }
-                break;
-            case 16:
-                // (, line 125
-                if (!(this.in_grouping_b(this.g_valid_LI, 99, 116)))
-                {
-                    return false;
-                }
-                // delete, line 125
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+  r_exception2() {
+    // (, line 159
+    // [, line 161
+    this.ket = this.cursor;
+    // substring, line 161
+    if (this.find_among_b(this.a_9) == 0) {
+      return false;
     }
-
-    r_Step_3 () 
-    {
-        var among_var;
-        // (, line 129
-        // [, line 130
-        this.ket = this.cursor;
-        // substring, line 130
-        among_var = this.find_among_b(this.a_6);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 130
-        this.bra = this.cursor;
-        // call R1, line 130
-        if (!this.r_R1())
-        {
-            return false;
-        }
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 131
-                // <-, line 131
-                if (!this.slice_from("tion"))
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 132
-                // <-, line 132
-                if (!this.slice_from("ate"))
-                {
-                    return false;
-                }
-                break;
-            case 3:
-                // (, line 133
-                // <-, line 133
-                if (!this.slice_from("al"))
-                {
-                    return false;
-                }
-                break;
-            case 4:
-                // (, line 135
-                // <-, line 135
-                if (!this.slice_from("ic"))
-                {
-                    return false;
-                }
-                break;
-            case 5:
-                // (, line 137
-                // delete, line 137
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-            case 6:
-                // (, line 139
-                // call R2, line 139
-                if (!this.r_R2())
-                {
-                    return false;
-                }
-                // delete, line 139
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+    // ], line 161
+    this.bra = this.cursor;
+    // atlimit, line 161
+    if (this.cursor > this.limit_backward) {
+      return false;
     }
+    return true;
+  }
 
-    r_Step_4 () 
-    {
-        var among_var;
-        // (, line 143
-        // [, line 144
-        this.ket = this.cursor;
-        // substring, line 144
-        among_var = this.find_among_b(this.a_7);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 144
-        this.bra = this.cursor;
-        // call R2, line 144
-        if (!this.r_R2())
-        {
-            return false;
-        }
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 147
-                // delete, line 147
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 148
-                // or, line 148
-                var lab0 = true;
-                lab0: while (lab0 == true)
-                {
-                    lab0 = false;
-                    var v_1 = this.limit - this.cursor;
-                    var lab1 = true;
-                    lab1: while (lab1 == true)
-                    {
-                        lab1 = false;
-                        // literal, line 148
-                        if (!(this.eq_s_b("s")))
-                        {
-                            break lab1;
-                        }
-                        break lab0;
-                    }
-                    this.cursor = this.limit - v_1;
-                    // literal, line 148
-                    if (!(this.eq_s_b("t")))
-                    {
-                        return false;
-                    }
-                }
-                // delete, line 148
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+  r_exception1() {
+    var among_var;
+    // (, line 171
+    // [, line 173
+    this.bra = this.cursor;
+    // substring, line 173
+    among_var = this.find_among(this.a_10);
+    if (among_var == 0) {
+      return false;
     }
-
-    r_Step_5 () 
-    {
-        var among_var;
-        // (, line 152
-        // [, line 153
-        this.ket = this.cursor;
-        // substring, line 153
-        among_var = this.find_among_b(this.a_8);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 153
-        this.bra = this.cursor;
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 154
-                // or, line 154
-                var lab0 = true;
-                lab0: while (lab0 == true)
-                {
-                    lab0 = false;
-                    var v_1 = this.limit - this.cursor;
-                    var lab1 = true;
-                    lab1: while (lab1 == true)
-                    {
-                        lab1 = false;
-                        // call R2, line 154
-                        if (!this.r_R2())
-                        {
-                            break lab1;
-                        }
-                        break lab0;
-                    }
-                    this.cursor = this.limit - v_1;
-                    // (, line 154
-                    // call R1, line 154
-                    if (!this.r_R1())
-                    {
-                        return false;
-                    }
-                    // not, line 154
-                    {
-                        var v_2 = this.limit - this.cursor;
-                        var lab2 = true;
-                        lab2: while (lab2 == true)
-                        {
-                            lab2 = false;
-                            // call shortv, line 154
-                            if (!this.r_shortv())
-                            {
-                                break lab2;
-                            }
-                            return false;
-                        }
-                        this.cursor = this.limit - v_2;
-                    }
-                }
-                // delete, line 154
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 155
-                // call R2, line 155
-                if (!this.r_R2())
-                {
-                    return false;
-                }
-                // literal, line 155
-                if (!(this.eq_s_b("l")))
-                {
-                    return false;
-                }
-                // delete, line 155
-                if (!this.slice_del())
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+    // ], line 173
+    this.ket = this.cursor;
+    // atlimit, line 173
+    if (this.cursor < this.limit) {
+      return false;
     }
-
-    r_exception2 () 
-    {
-        // (, line 159
-        // [, line 161
-        this.ket = this.cursor;
-        // substring, line 161
-        if (this.find_among_b(this.a_9) == 0)
-        {
-            return false;
+    switch (among_var) {
+      case 0:
+        return false;
+      case 1:
+        // (, line 177
+        // <-, line 177
+        if (!this.slice_from("ski")) {
+          return false;
         }
-        // ], line 161
-        this.bra = this.cursor;
-        // atlimit, line 161
-        if (this.cursor > this.limit_backward)
-        {
-            return false;
+        break;
+      case 2:
+        // (, line 178
+        // <-, line 178
+        if (!this.slice_from("sky")) {
+          return false;
         }
-        return true;
+        break;
+      case 3:
+        // (, line 179
+        // <-, line 179
+        if (!this.slice_from("die")) {
+          return false;
+        }
+        break;
+      case 4:
+        // (, line 180
+        // <-, line 180
+        if (!this.slice_from("lie")) {
+          return false;
+        }
+        break;
+      case 5:
+        // (, line 181
+        // <-, line 181
+        if (!this.slice_from("tie")) {
+          return false;
+        }
+        break;
+      case 6:
+        // (, line 182
+        // <-, line 182
+        if (!this.slice_from("replic")) {
+          return false;
+        }
+        break;
+      case 7:
+        // (, line 183
+        // <-, line 183
+        if (!this.slice_from("retriabl")) {
+          return false;
+        }
+        break;
+      case 8:
+        // (, line 184
+        // <-, line 184
+        if (!this.slice_from("important")) {
+          return false;
+        }
+        break;
+      case 9:
+        // (, line 188
+        // <-, line 188
+        if (!this.slice_from("idl")) {
+          return false;
+        }
+        break;
+      case 10:
+        // (, line 189
+        // <-, line 189
+        if (!this.slice_from("gentl")) {
+          return false;
+        }
+        break;
+      case 11:
+        // (, line 190
+        // <-, line 190
+        if (!this.slice_from("ugli")) {
+          return false;
+        }
+        break;
+      case 12:
+        // (, line 191
+        // <-, line 191
+        if (!this.slice_from("earli")) {
+          return false;
+        }
+        break;
+      case 13:
+        // (, line 192
+        // <-, line 192
+        if (!this.slice_from("onli")) {
+          return false;
+        }
+        break;
+      case 14:
+        // (, line 193
+        // <-, line 193
+        if (!this.slice_from("singl")) {
+          return false;
+        }
+        break;
     }
+    return true;
+  }
 
-    r_exception1 () 
-    {
-        var among_var;
-        // (, line 171
-        // [, line 173
-        this.bra = this.cursor;
-        // substring, line 173
-        among_var = this.find_among(this.a_10);
-        if (among_var == 0)
-        {
-            return false;
-        }
-        // ], line 173
-        this.ket = this.cursor;
-        // atlimit, line 173
-        if (this.cursor < this.limit)
-        {
-            return false;
-        }
-        switch (among_var) {
-            case 0:
-                return false;
-            case 1:
-                // (, line 177
-                // <-, line 177
-                if (!this.slice_from("ski"))
-                {
-                    return false;
-                }
-                break;
-            case 2:
-                // (, line 178
-                // <-, line 178
-                if (!this.slice_from("sky"))
-                {
-                    return false;
-                }
-                break;
-            case 3:
-                // (, line 179
-                // <-, line 179
-                if (!this.slice_from("die"))
-                {
-                    return false;
-                }
-                break;
-            case 4:
-                // (, line 180
-                // <-, line 180
-                if (!this.slice_from("lie"))
-                {
-                    return false;
-                }
-                break;
-            case 5:
-                // (, line 181
-                // <-, line 181
-                if (!this.slice_from("tie"))
-                {
-                    return false;
-                }
-                break;
-            case 6:
-                // (, line 182
-                // <-, line 182
-                if (!this.slice_from("replic"))
-                {
-                    return false;
-                }
-                break;
-            case 7:
-                // (, line 183
-                // <-, line 183
-                if (!this.slice_from("retriabl"))
-                {
-                    return false;
-                }
-                break;
-            case 8:
-                // (, line 184
-                // <-, line 184
-                if (!this.slice_from("important"))
-                {
-                    return false;
-                }
-                break;
-            case 9:
-                // (, line 188
-                // <-, line 188
-                if (!this.slice_from("idl"))
-                {
-                    return false;
-                }
-                break;
-            case 10:
-                // (, line 189
-                // <-, line 189
-                if (!this.slice_from("gentl"))
-                {
-                    return false;
-                }
-                break;
-            case 11:
-                // (, line 190
-                // <-, line 190
-                if (!this.slice_from("ugli"))
-                {
-                    return false;
-                }
-                break;
-            case 12:
-                // (, line 191
-                // <-, line 191
-                if (!this.slice_from("earli"))
-                {
-                    return false;
-                }
-                break;
-            case 13:
-                // (, line 192
-                // <-, line 192
-                if (!this.slice_from("onli"))
-                {
-                    return false;
-                }
-                break;
-            case 14:
-                // (, line 193
-                // <-, line 193
-                if (!this.slice_from("singl"))
-                {
-                    return false;
-                }
-                break;
-        }
-        return true;
+  r_postlude() {
+    // (, line 210
+    // Boolean test Y_found, line 210
+    if (!this.B_Y_found) {
+      return false;
     }
-
-    r_postlude () 
-    {
+    // repeat, line 210
+    replab0:
+    while (true) {
+      var v_1 = this.cursor;
+      var lab1 = true;
+      lab1:
+      while (lab1 == true) {
+        lab1 = false;
         // (, line 210
-        // Boolean test Y_found, line 210
-        if (!this.B_Y_found)
-        {
-            return false;
-        }
-        // repeat, line 210
-        replab0: while(true)
-        {
-            var v_1 = this.cursor;
-            var lab1 = true;
-            lab1: while (lab1 == true)
-            {
-                lab1 = false;
-                // (, line 210
-                // goto, line 210
-                golab2: while(true)
-                {
-                    var v_2 = this.cursor;
-                    var lab3 = true;
-                    lab3: while (lab3 == true)
-                    {
-                        lab3 = false;
-                        // (, line 210
-                        // [, line 210
-                        this.bra = this.cursor;
-                        // literal, line 210
-                        if (!(this.eq_s("Y")))
-                        {
-                            break lab3;
-                        }
-                        // ], line 210
-                        this.ket = this.cursor;
-                        this.cursor = v_2;
-                        break golab2;
-                    }
-                    this.cursor = v_2;
-                    if (this.cursor >= this.limit)
-                    {
-                        break lab1;
-                    }
-                    this.cursor++;
-                }
-                // <-, line 210
-                if (!this.slice_from("y"))
-                {
-                    return false;
-                }
-                continue replab0;
+        // goto, line 210
+        golab2:
+        while (true) {
+          var v_2 = this.cursor;
+          var lab3 = true;
+          lab3:
+          while (lab3 == true) {
+            lab3 = false;
+            // (, line 210
+            // [, line 210
+            this.bra = this.cursor;
+            // literal, line 210
+            if (!(this.eq_s("Y"))) {
+              break lab3;
             }
-            this.cursor = v_1;
-            break replab0;
+            // ], line 210
+            this.ket = this.cursor;
+            this.cursor = v_2;
+            break golab2;
+          }
+          this.cursor = v_2;
+          if (this.cursor >= this.limit) {
+            break lab1;
+          }
+          this.cursor++;
         }
-        return true;
+        // <-, line 210
+        if (!this.slice_from("y")) {
+          return false;
+        }
+        continue replab0;
+      }
+      this.cursor = v_1;
+      break replab0;
     }
+    return true;
+  }
 
-    stem () 
-    {
-        // (, line 212
-        // or, line 214
-        var lab0 = true;
-        lab0: while (lab0 == true)
-        {
-            lab0 = false;
-            var v_1 = this.cursor;
-            var lab1 = true;
-            lab1: while (lab1 == true)
-            {
-                lab1 = false;
-                // call exception1, line 214
-                if (!this.r_exception1())
-                {
-                    break lab1;
-                }
-                break lab0;
-            }
-            this.cursor = v_1;
-            var lab2 = true;
-            lab2: while (lab2 == true)
-            {
-                lab2 = false;
-                // not, line 215
-                {
-                    var v_2 = this.cursor;
-                    var lab3 = true;
-                    lab3: while (lab3 == true)
-                    {
-                        lab3 = false;
-                        // hop, line 215
-                        {
-                            var c = this.cursor + 3;
-                            if (0 > c || c > this.limit)
-                            {
-                                break lab3;
-                            }
-                            this.cursor = c;
-                        }
-                        break lab2;
-                    }
-                    this.cursor = v_2;
-                }
-                break lab0;
-            }
-            this.cursor = v_1;
-            // (, line 215
-            // do, line 216
-            var v_3 = this.cursor;
-            var lab4 = true;
-            lab4: while (lab4 == true)
-            {
-                lab4 = false;
-                // call prelude, line 216
-                if (!this.r_prelude())
-                {
-                    break lab4;
-                }
-            }
-            this.cursor = v_3;
-            // do, line 217
-            var v_4 = this.cursor;
-            var lab5 = true;
-            lab5: while (lab5 == true)
-            {
-                lab5 = false;
-                // call mark_regions, line 217
-                if (!this.r_mark_regions())
-                {
-                    break lab5;
-                }
-            }
-            this.cursor = v_4;
-            // backwards, line 218
-            this.limit_backward = this.cursor; this.cursor = this.limit;
-            // (, line 218
-            // do, line 220
-            var v_5 = this.limit - this.cursor;
-            var lab6 = true;
-            lab6: while (lab6 == true)
-            {
-                lab6 = false;
-                // call Step_1a, line 220
-                if (!this.r_Step_1a())
-                {
-                    break lab6;
-                }
-            }
-            this.cursor = this.limit - v_5;
-            // or, line 222
-            var lab7 = true;
-            lab7: while (lab7 == true)
-            {
-                lab7 = false;
-                var v_6 = this.limit - this.cursor;
-                var lab8 = true;
-                lab8: while (lab8 == true)
-                {
-                    lab8 = false;
-                    // call exception2, line 222
-                    if (!this.r_exception2())
-                    {
-                        break lab8;
-                    }
-                    break lab7;
-                }
-                this.cursor = this.limit - v_6;
-                // (, line 222
-                // do, line 224
-                var v_7 = this.limit - this.cursor;
-                var lab9 = true;
-                lab9: while (lab9 == true)
-                {
-                    lab9 = false;
-                    // call Step_1b, line 224
-                    if (!this.r_Step_1b())
-                    {
-                        break lab9;
-                    }
-                }
-                this.cursor = this.limit - v_7;
-                // do, line 225
-                var v_8 = this.limit - this.cursor;
-                var lab10 = true;
-                lab10: while (lab10 == true)
-                {
-                    lab10 = false;
-                    // call Step_1c, line 225
-                    if (!this.r_Step_1c())
-                    {
-                        break lab10;
-                    }
-                }
-                this.cursor = this.limit - v_8;
-                // do, line 227
-                var v_9 = this.limit - this.cursor;
-                var lab11 = true;
-                lab11: while (lab11 == true)
-                {
-                    lab11 = false;
-                    // call Step_2, line 227
-                    if (!this.r_Step_2())
-                    {
-                        break lab11;
-                    }
-                }
-                this.cursor = this.limit - v_9;
-                // do, line 228
-                var v_10 = this.limit - this.cursor;
-                var lab12 = true;
-                lab12: while (lab12 == true)
-                {
-                    lab12 = false;
-                    // call Step_3, line 228
-                    if (!this.r_Step_3())
-                    {
-                        break lab12;
-                    }
-                }
-                this.cursor = this.limit - v_10;
-                // do, line 229
-                var v_11 = this.limit - this.cursor;
-                var lab13 = true;
-                lab13: while (lab13 == true)
-                {
-                    lab13 = false;
-                    // call Step_4, line 229
-                    if (!this.r_Step_4())
-                    {
-                        break lab13;
-                    }
-                }
-                this.cursor = this.limit - v_11;
-                // do, line 231
-                var v_12 = this.limit - this.cursor;
-                var lab14 = true;
-                lab14: while (lab14 == true)
-                {
-                    lab14 = false;
-                    // call Step_5, line 231
-                    if (!this.r_Step_5())
-                    {
-                        break lab14;
-                    }
-                }
-                this.cursor = this.limit - v_12;
-            }
-            this.cursor = this.limit_backward;
-            // do, line 234
-            var v_13 = this.cursor;
-            var lab15 = true;
-            lab15: while (lab15 == true)
-            {
-                lab15 = false;
-                // call postlude, line 234
-                if (!this.r_postlude())
-                {
-                    break lab15;
-                }
-            }
-            this.cursor = v_13;
+  stem() {
+    // (, line 212
+    // or, line 214
+    var lab0 = true;
+    lab0:
+    while (lab0 == true) {
+      lab0 = false;
+      var v_1 = this.cursor;
+      var lab1 = true;
+      lab1:
+      while (lab1 == true) {
+        lab1 = false;
+        // call exception1, line 214
+        if (!this.r_exception1()) {
+          break lab1;
         }
-        return true;
+        break lab0;
+      }
+      this.cursor = v_1;
+      var lab2 = true;
+      lab2:
+      while (lab2 == true) {
+        lab2 = false;
+        // not, line 215
+        {
+          var v_2 = this.cursor;
+          var lab3 = true;
+          lab3:
+          while (lab3 == true) {
+            lab3 = false;
+            // hop, line 215
+            {
+              var c = this.cursor + 3;
+              if (0 > c || c > this.limit) {
+                break lab3;
+              }
+              this.cursor = c;
+            }
+            break lab2;
+          }
+          this.cursor = v_2;
+        }
+        break lab0;
+      }
+      this.cursor = v_1;
+      // (, line 215
+      // do, line 216
+      var v_3 = this.cursor;
+      var lab4 = true;
+      lab4:
+      while (lab4 == true) {
+        lab4 = false;
+        // call prelude, line 216
+        if (!this.r_prelude()) {
+          break lab4;
+        }
+      }
+      this.cursor = v_3;
+      // do, line 217
+      var v_4 = this.cursor;
+      var lab5 = true;
+      lab5:
+      while (lab5 == true) {
+        lab5 = false;
+        // call mark_regions, line 217
+        if (!this.r_mark_regions()) {
+          break lab5;
+        }
+      }
+      this.cursor = v_4;
+      // backwards, line 218
+      this.limit_backward = this.cursor;
+      this.cursor = this.limit;
+      // (, line 218
+      // do, line 220
+      var v_5 = this.limit - this.cursor;
+      var lab6 = true;
+      lab6:
+      while (lab6 == true) {
+        lab6 = false;
+        // call Step_1a, line 220
+        if (!this.r_Step_1a()) {
+          break lab6;
+        }
+      }
+      this.cursor = this.limit - v_5;
+      // or, line 222
+      var lab7 = true;
+      lab7:
+      while (lab7 == true) {
+        lab7 = false;
+        var v_6 = this.limit - this.cursor;
+        var lab8 = true;
+        lab8:
+        while (lab8 == true) {
+          lab8 = false;
+          // call exception2, line 222
+          if (!this.r_exception2()) {
+            break lab8;
+          }
+          break lab7;
+        }
+        this.cursor = this.limit - v_6;
+        // (, line 222
+        // do, line 224
+        var v_7 = this.limit - this.cursor;
+        var lab9 = true;
+        lab9:
+        while (lab9 == true) {
+          lab9 = false;
+          // call Step_1b, line 224
+          if (!this.r_Step_1b()) {
+            break lab9;
+          }
+        }
+        this.cursor = this.limit - v_7;
+        // do, line 225
+        var v_8 = this.limit - this.cursor;
+        var lab10 = true;
+        lab10:
+        while (lab10 == true) {
+          lab10 = false;
+          // call Step_1c, line 225
+          if (!this.r_Step_1c()) {
+            break lab10;
+          }
+        }
+        this.cursor = this.limit - v_8;
+        // do, line 227
+        var v_9 = this.limit - this.cursor;
+        var lab11 = true;
+        lab11:
+        while (lab11 == true) {
+          lab11 = false;
+          // call Step_2, line 227
+          if (!this.r_Step_2()) {
+            break lab11;
+          }
+        }
+        this.cursor = this.limit - v_9;
+        // do, line 228
+        var v_10 = this.limit - this.cursor;
+        var lab12 = true;
+        lab12:
+        while (lab12 == true) {
+          lab12 = false;
+          // call Step_3, line 228
+          if (!this.r_Step_3()) {
+            break lab12;
+          }
+        }
+        this.cursor = this.limit - v_10;
+        // do, line 229
+        var v_11 = this.limit - this.cursor;
+        var lab13 = true;
+        lab13:
+        while (lab13 == true) {
+          lab13 = false;
+          // call Step_4, line 229
+          if (!this.r_Step_4()) {
+            break lab13;
+          }
+        }
+        this.cursor = this.limit - v_11;
+        // do, line 231
+        var v_12 = this.limit - this.cursor;
+        var lab14 = true;
+        lab14:
+        while (lab14 == true) {
+          lab14 = false;
+          // call Step_5, line 231
+          if (!this.r_Step_5()) {
+            break lab14;
+          }
+        }
+        this.cursor = this.limit - v_12;
+      }
+      this.cursor = this.limit_backward;
+      // do, line 234
+      var v_13 = this.cursor;
+      var lab15 = true;
+      lab15:
+      while (lab15 == true) {
+        lab15 = false;
+        // call postlude, line 234
+        if (!this.r_postlude()) {
+          break lab15;
+        }
+      }
+      this.cursor = v_13;
     }
+    return true;
+  }
 
-    setCurrent (value)
-    {
-        this.current = value;
+  setCurrent(value) {
+    this.current = value;
     this.cursor = 0;
     this.limit = this.current.length;
     this.limit_backward = 0;
     this.bra = this.cursor;
     this.ket = this.limit;
-    }
+  }
 
-    /**
+  /**
      * Get the this.current string.
      */
-    getCurrent ()
-    {
-        return this.current;
-    }
+  getCurrent() {
+    return this.current;
+  }
 
+  copy_from(other) {
+    this.current = other.current;
+    this.cursor = other.cursor;
+    this.limit = other.limit;
+    this.limit_backward = other.limit_backward;
+    this.bra = other.bra;
+    this.ket = other.ket;
+  }
 
-    copy_from (other)
-    {
-    this.current          = other.current;
-    this.cursor           = other.cursor;
-    this.limit            = other.limit;
-    this.limit_backward   = other.limit_backward;
-    this.bra              = other.bra;
-    this.ket              = other.ket;
-    }
-
-    in_grouping (s, min, max)
-    {
+  in_grouping(s, min, max) {
     if (this.cursor >= this.limit) return false;
     var ch = this.current.charCodeAt(this.cursor);
     if (ch > max || ch < min) return false;
@@ -1647,10 +1497,9 @@ class Porter2 {
     if ((s[ch >>> 3] & (0x1 << (ch & 0x7))) == 0) return false;
     this.cursor++;
     return true;
-    }
+  }
 
-    in_grouping_b (s, min, max)
-    {
+  in_grouping_b(s, min, max) {
     if (this.cursor <= this.limit_backward) return false;
     var ch = this.current.charCodeAt(this.cursor - 1);
     if (ch > max || ch < min) return false;
@@ -1658,64 +1507,57 @@ class Porter2 {
     if ((s[ch >>> 3] & (0x1 << (ch & 0x7))) == 0) return false;
     this.cursor--;
     return true;
-    }
+  }
 
-    out_grouping (s, min, max)
-    {
+  out_grouping(s, min, max) {
     if (this.cursor >= this.limit) return false;
     var ch = this.current.charCodeAt(this.cursor);
     if (ch > max || ch < min) {
-        this.cursor++;
-        return true;
+      this.cursor++;
+      return true;
     }
     ch -= min;
     if ((s[ch >>> 3] & (0X1 << (ch & 0x7))) == 0) {
-        this.cursor++;
-        return true;
+      this.cursor++;
+      return true;
     }
     return false;
-    }
+  }
 
-    out_grouping_b (s, min, max)
-    {
+  out_grouping_b(s, min, max) {
     if (this.cursor <= this.limit_backward) return false;
     var ch = this.current.charCodeAt(this.cursor - 1);
     if (ch > max || ch < min) {
-        this.cursor--;
-        return true;
+      this.cursor--;
+      return true;
     }
     ch -= min;
     if ((s[ch >>> 3] & (0x1 << (ch & 0x7))) == 0) {
-        this.cursor--;
-        return true;
+      this.cursor--;
+      return true;
     }
     return false;
-    }
+  }
 
-    eq_s (s)
-    {
+  eq_s(s) {
     if (this.limit - this.cursor < s.length) return false;
-        if (this.current.slice(this.cursor, this.cursor + s.length) != s)
-        {
-            return false;
-        }
+    if (this.current.slice(this.cursor, this.cursor + s.length) != s) {
+      return false;
+    }
     this.cursor += s.length;
     return true;
-    }
+  }
 
-    eq_s_b (s)
-    {
+  eq_s_b(s) {
     if (this.cursor - this.limit_backward < s.length) return false;
-        if (this.current.slice(this.cursor - s.length, this.cursor) != s)
-        {
-            return false;
-        }
+    if (this.current.slice(this.cursor - s.length, this.cursor) != s) {
+      return false;
+    }
     this.cursor -= s.length;
     return true;
-    }
+  }
 
-    find_among (v )
-    {
+  find_among(v) {
     var i = 0;
     var j = v.length;
 
@@ -1727,36 +1569,29 @@ class Porter2 {
 
     var first_key_inspected = false;
 
-    while (true)
-        {
-        var k = i + ((j - i) >>> 1);
-        var diff = 0;
-        var common = common_i < common_j ? common_i : common_j; // smaller
-        var w = v[k];
-        var i2;
-        for (i2 = common; i2 < w.s.length; i2++)
-            {
-        if (c + common == l)
-                {
-            diff = -1;
-            break;
+    while (true) {
+      var k = i + ((j - i) >>> 1);
+      var diff = 0;
+      var common = common_i < common_j ? common_i : common_j; // smaller
+      var w = v[k];
+      var i2;
+      for (i2 = common; i2 < w.s.length; i2++) {
+        if (c + common == l) {
+          diff = -1;
+          break;
         }
         diff = this.current.charCodeAt(c + common) - w.s.charCodeAt(i2);
         if (diff != 0) break;
         common++;
-        }
-        if (diff < 0)
-            {
+      }
+      if (diff < 0) {
         j = k;
         common_j = common;
-        }
-            else
-            {
+      } else {
         i = k;
         common_i = common;
-        }
-        if (j - i <= 1)
-            {
+      }
+      if (j - i <= 1) {
         if (i > 0) break; // v->s has been inspected
         if (j == i) break; // only one item in v
 
@@ -1766,34 +1601,29 @@ class Porter2 {
 
         if (first_key_inspected) break;
         first_key_inspected = true;
-        }
+      }
     }
-    while (true)
-        {
-        var w = v[i];
-        if (common_i >= w.s.length)
-            {
+    while (true) {
+      var w = v[i];
+      if (common_i >= w.s.length) {
         this.cursor = c + w.s.length;
-        if (w.method == null)
-                {
-                    return w.result;
-                }
+        if (w.method == null) {
+          return w.result;
+        }
         var res = w.method(this);
         this.cursor = c + w.s.length;
-        if (res)
-                {
-                    return w.result;
-                }
+        if (res) {
+          return w.result;
         }
-        i = w.substring_i;
-        if (i < 0) return 0;
+      }
+      i = w.substring_i;
+      if (i < 0) return 0;
     }
-        return -1; // not reachable
-    }
+    return -1; // not reachable
+  }
 
-    // find_among_b is for backwards processing. Same comments apply
-    find_among_b (v )
-    {
+  // find_among_b is for backwards processing. Same comments apply
+  find_among_b(v) {
     var i = 0;
     var j = v.length;
 
@@ -1805,129 +1635,109 @@ class Porter2 {
 
     var first_key_inspected = false;
 
-    while (true)
-        {
-        var k = i + ((j - i) >> 1);
-        var diff = 0;
-        var common = common_i < common_j ? common_i : common_j;
-        var w = v[k];
-        var i2;
-        for (i2 = w.s.length - 1 - common; i2 >= 0; i2--)
-            {
-        if (c - common == lb)
-                {
-            diff = -1;
-            break;
+    while (true) {
+      var k = i + ((j - i) >> 1);
+      var diff = 0;
+      var common = common_i < common_j ? common_i : common_j;
+      var w = v[k];
+      var i2;
+      for (i2 = w.s.length - 1 - common; i2 >= 0; i2--) {
+        if (c - common == lb) {
+          diff = -1;
+          break;
         }
         diff = this.current.charCodeAt(c - 1 - common) - w.s.charCodeAt(i2);
         if (diff != 0) break;
         common++;
-        }
-        if (diff < 0)
-            {
+      }
+      if (diff < 0) {
         j = k;
         common_j = common;
-        }
-            else
-            {
+      } else {
         i = k;
         common_i = common;
-        }
-        if (j - i <= 1)
-            {
+      }
+      if (j - i <= 1) {
         if (i > 0) break;
         if (j == i) break;
         if (first_key_inspected) break;
         first_key_inspected = true;
-        }
+      }
     }
-    while (true)
-        {
-        var w = v[i];
-        if (common_i >= w.s.length)
-            {
+    while (true) {
+      var w = v[i];
+      if (common_i >= w.s.length) {
         this.cursor = c - w.s.length;
         if (w.method == null) return w.result;
         var res = w.method(this);
         this.cursor = c - w.s.length;
         if (res) return w.result;
-        }
-        i = w.substring_i;
-        if (i < 0) return 0;
+      }
+      i = w.substring_i;
+      if (i < 0) return 0;
     }
-        return -1; // not reachable
-    }
+    return -1; // not reachable
+  }
 
-    /* to replace chars between c_bra and c_ket in this.current by the
+  /* to replace chars between c_bra and c_ket in this.current by the
      * chars in s.
      */
-    replace_s (c_bra, c_ket, s)
-    {
+  replace_s(c_bra, c_ket, s) {
     var adjustment = s.length - (c_ket - c_bra);
     this.current = this.current.slice(0, c_bra) + s + this.current.slice(c_ket);
     this.limit += adjustment;
     if (this.cursor >= c_ket) this.cursor += adjustment;
     else if (this.cursor > c_bra) this.cursor = c_bra;
     return adjustment;
-    }
+  }
 
-    slice_check ()
-    {
-        if (this.bra < 0 ||
-            this.bra > this.ket ||
-            this.ket > this.limit ||
-            this.limit > this.current.length)
-        {
-            return false;
-        }
-        return true;
+  slice_check() {
+    if (
+      this.bra < 0 ||
+      this.bra > this.ket ||
+      this.ket > this.limit ||
+      this.limit > this.current.length
+    ) {
+      return false;
     }
+    return true;
+  }
 
-    slice_from (s)
-    {
-        var result = false;
-    if (this.slice_check())
-        {
-        this.replace_s(this.bra, this.ket, s);
-            result = true;
-        }
-        return result;
+  slice_from(s) {
+    var result = false;
+    if (this.slice_check()) {
+      this.replace_s(this.bra, this.ket, s);
+      result = true;
     }
+    return result;
+  }
 
-    slice_del ()
-    {
+  slice_del() {
     return this.slice_from("");
-    }
+  }
 
-    insert (c_bra, c_ket, s)
-    {
-        var adjustment = this.replace_s(c_bra, c_ket, s);
+  insert(c_bra, c_ket, s) {
+    var adjustment = this.replace_s(c_bra, c_ket, s);
     if (c_bra <= this.bra) this.bra += adjustment;
     if (c_bra <= this.ket) this.ket += adjustment;
-    }
+  }
 
-    /* Copy the slice into the supplied StringBuffer */
-    slice_to ()
-    {
-        var result = '';
-    if (this.slice_check())
-        {
-            result = this.current.slice(this.bra, this.ket);
-        }
-        return result;
+  /* Copy the slice into the supplied StringBuffer */
+  slice_to() {
+    var result = "";
+    if (this.slice_check()) {
+      result = this.current.slice(this.bra, this.ket);
     }
+    return result;
+  }
 
-    assign_to ()
-    {
-        return this.current.slice(0, this.limit);
-    }
+  assign_to() {
+    return this.current.slice(0, this.limit);
+  }
 
-    stemWord (word)
-    {
-        this.setCurrent(word);
-        this.stem();
-        return this.getCurrent();
-    }
+  stemWord(word) {
+    this.setCurrent(word);
+    this.stem();
+    return this.getCurrent();
+  }
 }
-
-exports.Porter2 = Porter2
