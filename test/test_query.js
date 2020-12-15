@@ -2,7 +2,7 @@
 'use strict'
 
 const assert = require('assert')
-const Query = require('../src/fts/query.js').Query
+const Query = require('../src/fts/Query.js').Query
 
 describe('Query', () => {
     it('should parse a single term', () => {

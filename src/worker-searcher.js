@@ -136,7 +136,7 @@ function sync(manifests) {
     for (const manifest of manifests) {
         for (const doc of manifest.documents) {
             const weight = doc.weight || 1
-            const id = newIndex.add({
+            const id = newIndex.add(manifest.searchProperty, {
                 links: doc.links,
                 url: doc.url,
 
