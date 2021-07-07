@@ -47,12 +47,20 @@ class Pool {
 
     getStatus() {
         return this.pool.map((worker) => {
+            if (worker.dead) {
+                return 'd'
+            }
+
             if (!this.suspended.has(worker)) {
                 return worker.backlog
             }
 
             return 's'
         })
+    }
+
+    [Symbol.iterator]() {
+        return this.pool.values()
     }
 }
 

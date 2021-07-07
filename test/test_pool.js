@@ -40,7 +40,7 @@ describe('Pool', () => {
     })
 
     it('Should throw if no elements are available', () => {
-        for (const worker of pool.pool) {
+        for (const worker of pool) {
             pool.suspend(worker)
         }
 
