@@ -8,3 +8,15 @@ resources:
     ## same as 2000m
     cpu: 2
     memory: 8000Mi
+
+probes:
+  enabled: true
+  path: /status
+  headers: {}
+  liveness:
+    httpGet: true
+    initialDelaySeconds: 10
+    periodSeconds: 60
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
