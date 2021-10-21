@@ -2,7 +2,7 @@ NPM ?= $(shell which npm)
 NODE ?= $(shell which node)
 MOCHA ?= ./node_modules/.bin/mocha
 ESLINT ?= ./node_modules/.bin/eslint
-MANIFEST_SOURCE ?= bucket:docs-mongodb-org-prod/search-indexes/
+MANIFEST_SOURCE ?= bucket:docs-mongodb-org-prd/search-indexes/
 export MANIFEST_SOURCE
 
 .PHONY: all lint test integration regression run
