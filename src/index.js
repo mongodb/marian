@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict'
 
-const { Buffer } = require('buffer')
 const fs = require('fs')
 const http = require('http')
 const os = require('os')
@@ -13,7 +12,6 @@ const zlib = require('zlib')
 
 const Pool = require('./pool.js').Pool
 const dive = require('dive')
-const iltorb = require('iltorb')
 const Logger = require('basic-logger')
 const S3 = require('aws-sdk/clients/s3')
 const Worker = require('tiny-worker')
@@ -49,12 +47,7 @@ const log = new Logger({
  */
 function compress(req, headers, content) {
     const acceptEncoding = (req.headers['accept-encoding'] || '').split(',').map((e) => e.trim())
-    if (acceptEncoding.indexOf('br') > -1) {
-        headers['Content-Encoding'] = 'br'
-        return util.promisify(iltorb.compress)(Buffer.from(content), {
-            quality: 4
-        })
-    } else if (acceptEncoding.indexOf('gzip') > -1) {
+    if (acceptEncoding.indexOf('gzip') > -1) {
         headers['Content-Encoding'] = 'gzip'
         return util.promisify(zlib.gzip)(content)
     }
