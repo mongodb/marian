@@ -416,7 +416,7 @@ class Marian {
 
         // If all workers are overloaded, return 503
         let statusCode = 200
-        if (status.workers.filter((n) => n <= WARNING_BACKLOG).length === 0) {
+        if (status.workers.filter((n) => (n <= WARNING_BACKLOG && n !== 's')).length === 0) {
             statusCode = 503
         }
 
