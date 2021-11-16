@@ -10,7 +10,7 @@
   "author": "Andrew Aldridge <andrew.aldridge@mongodb.com>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "aws-sdk": "^2.508.0",
+    "aws-sdk": "^2.814.0",
     "basic-logger": "^0.4.4",
     "dictionary-en-us": "^2.1.1",
     "dive": "^0.5.0",
