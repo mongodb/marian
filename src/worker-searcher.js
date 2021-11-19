@@ -113,7 +113,7 @@ function sync(manifests) {
         let url = manifest.body.url.replace(/\/+$/, '')
         const urlRoot = new URL(url)
         urlRoot.pathname = urlRoot.pathname.replace(/^\/+/, '')
-        url = urlRoot.toString()
+        url = urlRoot.toString().replace(/\/+$/, '')
 
         for (const alias of (manifest.body.aliases || [])) {
             newSearchPropertyAliases.set(alias, manifest.searchProperty)
