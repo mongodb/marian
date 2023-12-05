@@ -5,12 +5,9 @@ pipeline:
     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
     repo: 795250896452.dkr.ecr.us-east-1.amazonaws.com/docs/${DRONE_REPO_NAME}
     create_repository: true
-    tags:
-      - git-${DRONE_COMMIT_SHA:0:7}
-      - latest
     when:
       branch: [master, staging]
-      event: push
+      event: *
 
   deploy-staging:
     image: quay.io/mongodb/drone-helm:v2
